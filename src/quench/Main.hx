@@ -10,7 +10,7 @@ import openfl.events.Event;
 class Main extends Sprite {
 	private var gameWidth:Int = 1280; // Width of the game in pixels (might be less / more in actual pixels depending on your zoom).
 	private var gameHeight:Int = 720; // Height of the game in pixels (might be less / more in actual pixels depending on your zoom).
-	private var initialState:Class<FlxState> = InitState; // The FlxState the game starts with.
+	private var initialState:Class<FlxState> = PlayState; // The FlxState the game starts with.
 	private var frameRate:Int = 60; // How many frames per second the game should run at.
 	private var skipSplash:Bool = true; // Whether to skip the flixel splash screen that appears in release mode.
 	private var startFullscreen:Bool = false; // Whether to start the game in fullscreen on desktop targets
