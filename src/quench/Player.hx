@@ -1,31 +1,45 @@
 package quench;
 
-import flixel.util.FlxColor;
 import flixel.FlxG;
-import flixel.FlxSprite;
+import flixel.util.FlxColor;
 
-class Player extends FlxSprite {
-	private static final MOTION_FACTOR:Float = 100;
+class Player extends Pushable {
+	public function new(?x:Float = 0, ?y:Float = 0) {
+		super(x, y);
 
-	public function new() {
-		super();
-
-		makeGraphic(40, 40, FlxColor.RED);
+		makeGraphic(40, 40, FlxColor.YELLOW);
 	}
 
 	override public function update(elapsed:Float):Void {
 		super.update(elapsed);
-		if (FlxG.keys.pressed.UP) {
-			y -= elapsed * MOTION_FACTOR;
-		}
-		if (FlxG.keys.pressed.DOWN) {
-			y += elapsed * MOTION_FACTOR;
-		}
+
+		facing = NONE;
+
 		if (FlxG.keys.pressed.LEFT) {
-			x -= elapsed * MOTION_FACTOR;
+			facing = facing.with(LEFT);
 		}
 		if (FlxG.keys.pressed.RIGHT) {
-			x += elapsed * MOTION_FACTOR;
+			facing = facing.with(RIGHT);
+		}
+		if (FlxG.keys.pressed.UP) {
+			facing = facing.with(UP);
+		}
+		if (FlxG.keys.pressed.DOWN) {
+			facing = facing.with(DOWN);
+		}
+
+		acceleration.set();
+		if (facing.has(LEFT)) {
+			acceleration.x -= Pushable.MOTION_FACTOR;
+		}
+		if (facing.has(RIGHT)) {
+			acceleration.x += Pushable.MOTION_FACTOR;
+		}
+		if (facing.has(UP)) {
+			acceleration.y -= Pushable.MOTION_FACTOR;
+		}
+		if (facing.has(DOWN)) {
+			acceleration.y += Pushable.MOTION_FACTOR;
 		}
 	}
 }

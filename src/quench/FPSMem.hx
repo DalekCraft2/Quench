@@ -96,10 +96,10 @@ class FPSMem extends TextField {
 			text = "";
 			text += "Frame Rate: " + currentFrameRate + "\n";
 			if (currentMemory < 0)
-				text += "RAM: Leaking " + formatBytes(currentMemory) + "\n";
+				text += "Memory: Leaking " + formatBytes(currentMemory) + "\n";
 			else
-				text += "RAM: " + formatBytes(currentMemory) + "\n";
-			text += "RAM Peak: " + formatBytes(highestMem) + "\n";
+				text += "Memory: " + formatBytes(currentMemory) + "\n";
+			text += "Memory Peak: " + formatBytes(highestMem) + "\n";
 
 			textColor = FlxColor.WHITE;
 			if (/*currentMemory > 3000 ||*/ currentFrameRate <= FlxG.drawFramerate / 2) {
