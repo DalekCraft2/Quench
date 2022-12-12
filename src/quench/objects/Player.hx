@@ -1,9 +1,9 @@
-package quench;
+package quench.objects;
 
 import flixel.FlxG;
 import flixel.util.FlxColor;
 
-class Player extends Pushable {
+class Player extends PhysicsObject {
 	public var big(default, set):Bool = false;
 
 	private var bigFactor:Float = 1;

@@ -1,8 +1,8 @@
-package quench;
+package quench.objects;
 
 import flixel.FlxSprite;
 
-class Pushable extends FlxSprite {
+class PhysicsObject extends FlxSprite {
 	public static final MOTION_FACTOR:Float = 100;
 
 	public function new(?x:Float = 0, ?y:Float = 0) {

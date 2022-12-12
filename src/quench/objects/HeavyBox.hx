@@ -1,8 +1,8 @@
-package quench;
+package quench.objects;
 
 import flixel.util.FlxColor;
 
-class HeavyBox extends Pushable {
+class HeavyBox extends PhysicsObject {
 	public function new(?x:Float = 0, ?y:Float = 0) {
 		super(x, y);
 
