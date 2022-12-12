@@ -3,20 +3,32 @@ package quench.objects;
 import flixel.FlxG;
 import flixel.math.FlxPoint;
 import flixel.util.FlxColor;
+import flixel.util.FlxDestroyUtil;
+import flixel.util.FlxTimer;
 
 /**
- * The world's worst AI.
+ * The world's worst AI, but modified.
  */
-class Opponent extends PhysicsObject {
+class Ram extends PhysicsObject {
+	private var canMove:Bool = true;
+
+	private var timer:FlxTimer;
+
 	public function new(?x:Float = 0, ?y:Float = 0) {
 		super(x, y);
 
-		makeGraphic(40, 40, FlxColor.RED);
+		makeGraphic(40, 40, FlxColor.PURPLE);
+
+		timer = new FlxTimer().start(3, (tmr:FlxTimer) -> {
+			canMove = !canMove;
+		}, 0);
+		maxVelocity.set(10000, 10000);
 	}
 
 	override public function update(elapsed:Float):Void {
 		super.update(elapsed);
 
+		// if (canMove) {
 		var player:Player = cast(FlxG.state, PlayState).player; // I will absolutely do this differently in the future, I promise.
 		facing = NONE;
 
@@ -25,31 +37,37 @@ class Opponent extends PhysicsObject {
 		var playerGraphicMidpoint:FlxPoint = player.getGraphicMidpoint();
 		if (graphicMidpoint.x > playerGraphicMidpoint.x) {
 			facing = facing.with(LEFT);
-		}
-		if (graphicMidpoint.x < playerGraphicMidpoint.x) {
+		} else if (graphicMidpoint.x < playerGraphicMidpoint.x) {
 			facing = facing.with(RIGHT);
 		}
 		if (graphicMidpoint.y > playerGraphicMidpoint.y) {
 			facing = facing.with(UP);
-		}
-		if (graphicMidpoint.y < playerGraphicMidpoint.y) {
+		} else if (graphicMidpoint.y < playerGraphicMidpoint.y) {
 			facing = facing.with(DOWN);
 		}
 		graphicMidpoint.put();
 		playerGraphicMidpoint.put();
 
+		var factor:Float = canMove ? 7 : 1;
 		acceleration.set();
 		if (facing.has(LEFT)) {
-			acceleration.x -= PhysicsObject.MOTION_FACTOR;
+			acceleration.x -= factor * PhysicsObject.MOTION_FACTOR;
 		}
 		if (facing.has(RIGHT)) {
-			acceleration.x += PhysicsObject.MOTION_FACTOR;
+			acceleration.x += factor * PhysicsObject.MOTION_FACTOR;
 		}
 		if (facing.has(UP)) {
-			acceleration.y -= PhysicsObject.MOTION_FACTOR;
+			acceleration.y -= factor * PhysicsObject.MOTION_FACTOR;
 		}
 		if (facing.has(DOWN)) {
-			acceleration.y += PhysicsObject.MOTION_FACTOR;
+			acceleration.y += factor * PhysicsObject.MOTION_FACTOR;
 		}
+		// }
+	}
+
+	override public function destroy():Void {
+		super.destroy();
+
+		timer = FlxDestroyUtil.destroy(timer);
 	}
 }

@@ -5,13 +5,15 @@ import flixel.math.FlxPoint;
 import flixel.util.FlxColor;
 
 /**
- * The world's worst AI.
+ * You will die in the next 5 minutes.
  */
-class Opponent extends PhysicsObject {
+class Fucker extends PhysicsObject {
 	public function new(?x:Float = 0, ?y:Float = 0) {
 		super(x, y);
 
-		makeGraphic(40, 40, FlxColor.RED);
+		makeGraphic(90, 90, FlxColor.BLUE);
+		mass = 5;
+		maxVelocity.set(10000, 10000);
 	}
 
 	override public function update(elapsed:Float):Void {
@@ -40,16 +42,16 @@ class Opponent extends PhysicsObject {
 
 		acceleration.set();
 		if (facing.has(LEFT)) {
-			acceleration.x -= PhysicsObject.MOTION_FACTOR;
+			acceleration.x -= 3 * PhysicsObject.MOTION_FACTOR;
 		}
 		if (facing.has(RIGHT)) {
-			acceleration.x += PhysicsObject.MOTION_FACTOR;
+			acceleration.x += 3 * PhysicsObject.MOTION_FACTOR;
 		}
 		if (facing.has(UP)) {
-			acceleration.y -= PhysicsObject.MOTION_FACTOR;
+			acceleration.y -= 3 * PhysicsObject.MOTION_FACTOR;
 		}
 		if (facing.has(DOWN)) {
-			acceleration.y += PhysicsObject.MOTION_FACTOR;
+			acceleration.y += 3 * PhysicsObject.MOTION_FACTOR;
 		}
 	}
 }

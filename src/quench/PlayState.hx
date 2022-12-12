@@ -7,10 +7,12 @@ import flixel.util.FlxColor;
 import flixel.util.FlxDestroyUtil;
 import quench.objects.BouncyThing;
 import quench.objects.Box;
+import quench.objects.Fucker;
 import quench.objects.HeavyBox;
+import quench.objects.Opponent;
 import quench.objects.PhysicsObject;
 import quench.objects.Player;
-import quench.objects.Opponent;
+import quench.objects.Ram;
 import quench.objects.Trampoline;
 import quench.objects.Wall;
 
@@ -68,6 +70,16 @@ class PlayState extends FlxState {
 		}
 		if (FlxG.keys.justPressed.FOUR) {
 			var newObj:PhysicsObject = new Opponent(player.x, player.y);
+			physicsObjects.add(newObj);
+			removables.add(newObj);
+		}
+		if (FlxG.keys.justPressed.FIVE) {
+			var newObj:PhysicsObject = new Ram(player.x, player.y);
+			physicsObjects.add(newObj);
+			removables.add(newObj);
+		}
+		if (FlxG.keys.justPressed.SIX) {
+			var newObj:PhysicsObject = new Fucker(player.x, player.y);
 			physicsObjects.add(newObj);
 			removables.add(newObj);
 		}
