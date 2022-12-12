@@ -45,16 +45,16 @@ class Player extends PhysicsObject {
 
 		acceleration.set();
 		if (facing.has(LEFT)) {
-			acceleration.x -= 2 * Pushable.MOTION_FACTOR * bigFactor;
+			acceleration.x -= 2 * PhysicsObject.MOTION_FACTOR * bigFactor;
 		}
 		if (facing.has(RIGHT)) {
-			acceleration.x += 2 * Pushable.MOTION_FACTOR * bigFactor;
+			acceleration.x += 2 * PhysicsObject.MOTION_FACTOR * bigFactor;
 		}
 		if (facing.has(UP)) {
-			acceleration.y -= 2 * Pushable.MOTION_FACTOR * bigFactor;
+			acceleration.y -= 2 * PhysicsObject.MOTION_FACTOR * bigFactor;
 		}
 		if (facing.has(DOWN)) {
-			acceleration.y += 2 * Pushable.MOTION_FACTOR * bigFactor;
+			acceleration.y += 2 * PhysicsObject.MOTION_FACTOR * bigFactor;
 		}
 	}
 
@@ -65,7 +65,7 @@ class Player extends PhysicsObject {
 		} else {
 			bigFactor = 1;
 		}
-		maxVelocity.set(bigFactor * Pushable.MOTION_FACTOR, bigFactor * Pushable.MOTION_FACTOR);
+		maxVelocity.set(bigFactor * PhysicsObject.MOTION_FACTOR, bigFactor * PhysicsObject.MOTION_FACTOR);
 		scale.set(bigFactor, bigFactor);
 		updateHitbox();
 		mass = scale.x * scale.y;

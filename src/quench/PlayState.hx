@@ -10,11 +10,13 @@ import quench.objects.Box;
 import quench.objects.HeavyBox;
 import quench.objects.PhysicsObject;
 import quench.objects.Player;
+import quench.objects.Opponent;
 import quench.objects.Trampoline;
 import quench.objects.Wall;
 
 class PlayState extends FlxState {
-	private var player:Player;
+	public var player:Player;
+
 	private var physicsObjects:FlxTypedGroup<PhysicsObject>;
 	private var removables:FlxTypedGroup<PhysicsObject>;
 
@@ -61,6 +63,11 @@ class PlayState extends FlxState {
 		}
 		if (FlxG.keys.justPressed.THREE) {
 			var newObj:PhysicsObject = new BouncyThing(player.x, player.y);
+			physicsObjects.add(newObj);
+			removables.add(newObj);
+		}
+		if (FlxG.keys.justPressed.FOUR) {
+			var newObj:PhysicsObject = new Opponent(player.x, player.y);
 			physicsObjects.add(newObj);
 			removables.add(newObj);
 		}
