@@ -4,6 +4,10 @@ import flixel.FlxG;
 import flixel.util.FlxColor;
 
 class Player extends Pushable {
+	public var big(default, set):Bool = false;
+
+	private var bigFactor:Float = 1;
+
 	public function new(?x:Float = 0, ?y:Float = 0) {
 		super(x, y);
 
@@ -13,8 +17,19 @@ class Player extends Pushable {
 	override public function update(elapsed:Float):Void {
 		super.update(elapsed);
 
-		facing = NONE;
+		if (FlxG.keys.justPressed.ENTER) {
+			big = !big;
+		}
+		if (FlxG.keys.justPressed.V) { // Garry's Mod.
+			solid = !solid;
+			if (solid) {
+				alpha = 1;
+			} else {
+				alpha = 0.5;
+			}
+		}
 
+		facing = NONE;
 		if (FlxG.keys.pressed.LEFT) {
 			facing = facing.with(LEFT);
 		}
@@ -30,16 +45,30 @@ class Player extends Pushable {
 
 		acceleration.set();
 		if (facing.has(LEFT)) {
-			acceleration.x -= Pushable.MOTION_FACTOR;
+			acceleration.x -= 2 * Pushable.MOTION_FACTOR * bigFactor;
 		}
 		if (facing.has(RIGHT)) {
-			acceleration.x += Pushable.MOTION_FACTOR;
+			acceleration.x += 2 * Pushable.MOTION_FACTOR * bigFactor;
 		}
 		if (facing.has(UP)) {
-			acceleration.y -= Pushable.MOTION_FACTOR;
+			acceleration.y -= 2 * Pushable.MOTION_FACTOR * bigFactor;
 		}
 		if (facing.has(DOWN)) {
-			acceleration.y += Pushable.MOTION_FACTOR;
+			acceleration.y += 2 * Pushable.MOTION_FACTOR * bigFactor;
 		}
+	}
+
+	private function set_big(value:Bool):Bool {
+		big = value;
+		if (big) {
+			bigFactor = 2;
+		} else {
+			bigFactor = 1;
+		}
+		maxVelocity.set(bigFactor * Pushable.MOTION_FACTOR, bigFactor * Pushable.MOTION_FACTOR);
+		scale.set(bigFactor, bigFactor);
+		updateHitbox();
+		mass = scale.x * scale.y;
+		return value;
 	}
 }

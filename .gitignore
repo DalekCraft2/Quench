@@ -1,6 +1,6 @@
 ### VS Code
 bin/
-.vscode/
+# .vscode/
 *.code-workspace
 # Local history which shouldn't be shared.
 .history
