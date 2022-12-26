@@ -7,6 +7,6 @@ class BouncyThing extends PhysicsObject {
 		super(x, y);
 
 		makeGraphic(40, 40, FlxColor.ORANGE);
-		elasticity = 2;
+		elasticity = 0.9;
 	}
 }

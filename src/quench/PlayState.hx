@@ -1,5 +1,6 @@
 package quench;
 
+import flixel.FlxBasic;
 import flixel.FlxG;
 import flixel.FlxState;
 import flixel.group.FlxGroup.FlxTypedGroup;
@@ -16,10 +17,12 @@ import quench.objects.Ram;
 import quench.objects.Trampoline;
 import quench.objects.Wall;
 
+// TODO Use TileMaps for pathfinding, and also use FlxWeapon/FlxBullet to implement health stuff
 class PlayState extends FlxState {
 	public var player:Player;
 
-	private var physicsObjects:FlxTypedGroup<PhysicsObject>;
+	private var physicsObjects:FlxTypedGroup<FlxBasic>;
+	private var boundaries:FlxTypedGroup<PhysicsObject>;
 	private var removables:FlxTypedGroup<PhysicsObject>;
 
 	override public function create():Void {
@@ -27,18 +30,22 @@ class PlayState extends FlxState {
 
 		this.bgColor = FlxColor.CYAN;
 
-		removables = new FlxTypedGroup();
-
-		physicsObjects = new FlxTypedGroup();
-		add(physicsObjects);
+		boundaries = new FlxTypedGroup();
 		var wall1:PhysicsObject = new Wall(0, 0);
 		var wall2:PhysicsObject = new Wall(FlxG.width - 60, 0);
 		var trampoline1:PhysicsObject = new Trampoline(0, 0);
 		var trampoline2:PhysicsObject = new Trampoline(0, FlxG.height - 60);
-		physicsObjects.add(wall1);
-		physicsObjects.add(wall2);
-		physicsObjects.add(trampoline1);
-		physicsObjects.add(trampoline2);
+		boundaries.add(wall1);
+		boundaries.add(wall2);
+		boundaries.add(trampoline1);
+		boundaries.add(trampoline2);
+
+		removables = new FlxTypedGroup();
+
+		physicsObjects = new FlxTypedGroup();
+		physicsObjects.add(boundaries);
+		physicsObjects.add(removables);
+		add(physicsObjects);
 
 		// Something what I learned: if an FlxBasic is added to a state twice (e.g. by doing add(obj), and then add(group) and group.add(obj)), then update() will be called twice for it
 		player = new Player();
@@ -49,54 +56,49 @@ class PlayState extends FlxState {
 	override public function update(elapsed:Float):Void {
 		super.update(elapsed);
 
-		if (FlxG.keys.justPressed.SPACE) {
-			Debug.logTrace(player.x + ", " + player.y);
-		}
-
-		if (FlxG.keys.justPressed.ONE) {
+		if (FlxG.keys.justPressed.ONE || (FlxG.keys.pressed.ONE && FlxG.keys.pressed.SHIFT)) {
 			var newObj:PhysicsObject = new Box(player.x, player.y);
-			physicsObjects.add(newObj);
 			removables.add(newObj);
 		}
-		if (FlxG.keys.justPressed.TWO) {
+		if (FlxG.keys.justPressed.TWO || (FlxG.keys.pressed.TWO && FlxG.keys.pressed.SHIFT)) {
 			var newObj:PhysicsObject = new HeavyBox(player.x, player.y);
-			physicsObjects.add(newObj);
 			removables.add(newObj);
 		}
-		if (FlxG.keys.justPressed.THREE) {
+		if (FlxG.keys.justPressed.THREE || (FlxG.keys.pressed.THREE && FlxG.keys.pressed.SHIFT)) {
 			var newObj:PhysicsObject = new BouncyThing(player.x, player.y);
-			physicsObjects.add(newObj);
 			removables.add(newObj);
 		}
-		if (FlxG.keys.justPressed.FOUR) {
+		if (FlxG.keys.justPressed.FOUR || (FlxG.keys.pressed.FOUR && FlxG.keys.pressed.SHIFT)) {
 			var newObj:PhysicsObject = new Opponent(player.x, player.y);
-			physicsObjects.add(newObj);
 			removables.add(newObj);
 		}
-		if (FlxG.keys.justPressed.FIVE) {
+		if (FlxG.keys.justPressed.FIVE || (FlxG.keys.pressed.FIVE && FlxG.keys.pressed.SHIFT)) {
 			var newObj:PhysicsObject = new Ram(player.x, player.y);
-			physicsObjects.add(newObj);
 			removables.add(newObj);
 		}
-		if (FlxG.keys.justPressed.SIX) {
+		if (FlxG.keys.justPressed.SIX || (FlxG.keys.pressed.SIX && FlxG.keys.pressed.SHIFT)) {
 			var newObj:PhysicsObject = new Fucker(player.x, player.y);
-			physicsObjects.add(newObj);
 			removables.add(newObj);
 		}
 
 		if (FlxG.keys.justPressed.R) {
 			for (physicsObject in removables) {
-				physicsObjects.remove(physicsObject);
 				physicsObject.destroy();
 			}
 			removables.clear();
+		}
+		if (FlxG.keys.justPressed.B) {
+			for (boundary in boundaries) {
+				boundary.solid = !boundary.solid;
+				boundary.visible = !boundary.visible;
+			}
 		}
 
 		if (FlxG.keys.justPressed.T) {
 			player.screenCenter();
 		}
 
-		// FIXME If the player is touching two objects at the same time and pushing them in the same direction with enough speed, they eventually start phasing through one of them
+		// FIXME Not a bug on my end (I believe), but I am writing this as a reminder to report to the Flixel repository that collision does not occur outside of the camera's default view, even if FlxCamera.focusOn() is used to move the focus outside of the default view
 		FlxG.collide(physicsObjects, physicsObjects);
 	}
 
@@ -106,5 +108,6 @@ class PlayState extends FlxState {
 		player = FlxDestroyUtil.destroy(player);
 		physicsObjects = FlxDestroyUtil.destroy(physicsObjects);
 		removables = FlxDestroyUtil.destroy(removables);
+		boundaries = FlxDestroyUtil.destroy(boundaries);
 	}
 }

@@ -3,7 +3,7 @@ package quench.objects;
 import flixel.FlxG;
 import flixel.util.FlxColor;
 
-class Player extends PhysicsObject {
+class Player extends Entity {
 	public var big(default, set):Bool = false;
 
 	private var bigFactor:Float = 1;
@@ -12,6 +12,7 @@ class Player extends PhysicsObject {
 		super(x, y);
 
 		makeGraphic(40, 40, FlxColor.YELLOW);
+		entityMovementSpeed = 2 * bigFactor;
 	}
 
 	override public function update(elapsed:Float):Void {
@@ -29,46 +30,27 @@ class Player extends PhysicsObject {
 			}
 		}
 
-		facing = NONE;
-		if (FlxG.keys.pressed.LEFT) {
-			facing = facing.with(LEFT);
-		}
-		if (FlxG.keys.pressed.RIGHT) {
-			facing = facing.with(RIGHT);
-		}
-		if (FlxG.keys.pressed.UP) {
-			facing = facing.with(UP);
-		}
-		if (FlxG.keys.pressed.DOWN) {
-			facing = facing.with(DOWN);
-		}
+		var left:Bool = FlxG.keys.pressed.LEFT;
+		var right:Bool = FlxG.keys.pressed.RIGHT;
+		var up:Bool = FlxG.keys.pressed.UP;
+		var down:Bool = FlxG.keys.pressed.DOWN;
+		facing = FlxDirectionFlags.fromBools(left, right, up, down);
 
-		acceleration.set();
-		if (facing.has(LEFT)) {
-			acceleration.x -= 2 * PhysicsObject.MOTION_FACTOR * bigFactor;
-		}
-		if (facing.has(RIGHT)) {
-			acceleration.x += 2 * PhysicsObject.MOTION_FACTOR * bigFactor;
-		}
-		if (facing.has(UP)) {
-			acceleration.y -= 2 * PhysicsObject.MOTION_FACTOR * bigFactor;
-		}
-		if (facing.has(DOWN)) {
-			acceleration.y += 2 * PhysicsObject.MOTION_FACTOR * bigFactor;
-		}
+		updateDirectionalAcceleration();
 	}
 
 	private function set_big(value:Bool):Bool {
 		big = value;
 		if (big) {
-			bigFactor = 2;
+			bigFactor = 6;
 		} else {
 			bigFactor = 1;
 		}
-		maxVelocity.set(bigFactor * PhysicsObject.MOTION_FACTOR, bigFactor * PhysicsObject.MOTION_FACTOR);
+		// maxVelocity.set(bigFactor * PhysicsObject.MOTION_FACTOR, bigFactor * PhysicsObject.MOTION_FACTOR);
 		scale.set(bigFactor, bigFactor);
 		updateHitbox();
 		mass = scale.x * scale.y;
+		entityMovementSpeed = 2 * bigFactor;
 		return value;
 	}
 }

@@ -4,16 +4,19 @@ import flixel.FlxG;
 import flixel.math.FlxPoint;
 import flixel.util.FlxColor;
 
+// TODO Get rid of this AI because it is boring as hell. Make more stuff like the Ram.
+
 /**
  * You will die in the next 5 minutes.
  */
-class Fucker extends PhysicsObject {
+class Fucker extends Entity {
 	public function new(?x:Float = 0, ?y:Float = 0) {
 		super(x, y);
 
 		makeGraphic(90, 90, FlxColor.BLUE);
 		mass = 5;
 		maxVelocity.set(10000, 10000);
+		entityMovementSpeed = 3;
 	}
 
 	override public function update(elapsed:Float):Void {
@@ -23,35 +26,16 @@ class Fucker extends PhysicsObject {
 		facing = NONE;
 
 		// This does not work with raw coordinates, for whatever reason, so I have to use graphic midpoints.
-		var graphicMidpoint:FlxPoint = getGraphicMidpoint();
-		var playerGraphicMidpoint:FlxPoint = player.getGraphicMidpoint();
-		if (graphicMidpoint.x > playerGraphicMidpoint.x) {
-			facing = facing.with(LEFT);
-		}
-		if (graphicMidpoint.x < playerGraphicMidpoint.x) {
-			facing = facing.with(RIGHT);
-		}
-		if (graphicMidpoint.y > playerGraphicMidpoint.y) {
-			facing = facing.with(UP);
-		}
-		if (graphicMidpoint.y < playerGraphicMidpoint.y) {
-			facing = facing.with(DOWN);
-		}
+		var graphicMidpoint:FlxPoint = getMidpoint();
+		var playerGraphicMidpoint:FlxPoint = player.getMidpoint();
+		var left:Bool = graphicMidpoint.x > playerGraphicMidpoint.x;
+		var right:Bool = graphicMidpoint.x < playerGraphicMidpoint.x;
+		var up:Bool = graphicMidpoint.y > playerGraphicMidpoint.y;
+		var down:Bool = graphicMidpoint.y < playerGraphicMidpoint.y;
+		facing = FlxDirectionFlags.fromBools(left, right, up, down);
 		graphicMidpoint.put();
 		playerGraphicMidpoint.put();
 
-		acceleration.set();
-		if (facing.has(LEFT)) {
-			acceleration.x -= 3 * PhysicsObject.MOTION_FACTOR;
-		}
-		if (facing.has(RIGHT)) {
-			acceleration.x += 3 * PhysicsObject.MOTION_FACTOR;
-		}
-		if (facing.has(UP)) {
-			acceleration.y -= 3 * PhysicsObject.MOTION_FACTOR;
-		}
-		if (facing.has(DOWN)) {
-			acceleration.y += 3 * PhysicsObject.MOTION_FACTOR;
-		}
+		updateDirectionalAcceleration();
 	}
 }

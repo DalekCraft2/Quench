@@ -1,13 +1,18 @@
-### VS Code
-bin/
-# .vscode/
-*.code-workspace
-# Local history which shouldn't be shared.
-.history
-.ionide
-# ! means a file should be added regardless of it it gets ignored prior.
-# Including to allow others to use already set-up configuration tweaked for the project.
+# Visual Studio Code
+.vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+!.vscode/*.code-snippets
+
+# Local History for Visual Studio Code
+.history/
+
+# Built Visual Studio Code Extensions
+*.vsix
+
+*.code-workspace
+
+# Haxe
+bin/
