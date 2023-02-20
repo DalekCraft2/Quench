@@ -80,7 +80,7 @@ class PlayState extends FlxState {
 		bullets = new FlxTypedGroup();
 		physicsObjects.add(bullets);
 
-		camera.follow(player, NO_DEAD_ZONE);
+		// camera.follow(player, NO_DEAD_ZONE);
 	}
 
 	override public function update(elapsed:Float):Void {
