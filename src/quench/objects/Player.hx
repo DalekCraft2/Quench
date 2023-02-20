@@ -2,6 +2,7 @@ package quench.objects;
 
 import flixel.FlxG;
 import flixel.util.FlxColor;
+import flixel.util.FlxDirectionFlags;
 
 class Player extends Entity {
 	public var big(default, set):Bool = false;
@@ -34,7 +35,11 @@ class Player extends Entity {
 		var right:Bool = FlxG.keys.pressed.RIGHT;
 		var up:Bool = FlxG.keys.pressed.UP;
 		var down:Bool = FlxG.keys.pressed.DOWN;
-		facing = FlxDirectionFlags.fromBools(left, right, up, down);
+		var movementDirection:FlxDirectionFlags = FlxDirectionFlags.fromBools(left, right, up, down);
+		isWalking = movementDirection != NONE;
+		if (isWalking) {
+			facing = movementDirection;
+		}
 
 		updateDirectionalAcceleration();
 	}
