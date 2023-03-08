@@ -30,16 +30,30 @@ class FPSMem extends TextField {
 	 */
 	public var currentFrameRate(default, null):Int;
 
-	public var currentMemory(default, null):Float;
+	public var currentMemory(default, null):Int;
 
-	public var highestMem:Float = 0;
+	public var highestMem:Int = 0;
 
-	// FIXME bitmap does not sync with x and y values of FPSMem other than (0, 0)
 	private var bitmap:Bitmap;
 
 	@:noCompletion private var cacheCount:Int = 0;
 	@:noCompletion private var currentTime:Float = 0;
 	@:noCompletion private var times:Array<Float> = [];
+
+	/**
+	 * Takes an amount of bytes and finds the fitting unit. Makes sure that the
+	 * value is below 1024. Example: formatBytes(123456789); -> 117.74 MB
+	 * Modified from FlxStringUtil.formatBytes().
+	 */
+	public static function formatBytes(bytes:Float, precision:Int = 2):String {
+		var units:Array<String> = ["B", "kB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
+		var curUnit:Int = 0;
+		while (bytes >= 1024 && curUnit < units.length - 1) {
+			bytes /= 1024;
+			curUnit++;
+		}
+		return FlxMath.roundDecimal(bytes, precision) + " " + units[curUnit];
+	}
 
 	public function new(x:Float = 0, y:Float = 0, color:FlxColor = FlxColor.BLACK) {
 		super();
@@ -115,22 +129,8 @@ class FPSMem extends TextField {
 
 		bitmap.x = x;
 		bitmap.y = y;
-		bitmap.bitmapData = ImageOutline.renderImage(this, 2, FlxColor.BLACK, 1);
+		bitmap.bitmapData = ImageOutline.renderImage(this, 2, FlxColor.BLACK, 1, false);
 
 		cacheCount = currentCount;
-	}
-
-	/**
-	 * Takes an amount of bytes and finds the fitting unit. Makes sure that the
-	 * value is below 1024. Example: formatBytes(123456789); -> 117.74 MB
-	 */
-	public static function formatBytes(bytes:Float, precision:Int = 2):String {
-		var units:Array<String> = ["B", "kB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
-		var curUnit:Int = 0;
-		while (bytes >= 1024 && curUnit < units.length - 1) {
-			bytes /= 1024;
-			curUnit++;
-		}
-		return FlxMath.roundDecimal(bytes, precision) + " " + units[curUnit];
 	}
 }

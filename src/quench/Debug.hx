@@ -1,11 +1,15 @@
 package quench;
 
 import flixel.FlxG;
+import flixel.FlxSprite;
 import flixel.system.debug.log.LogStyle;
-import flixel.util.FlxStringUtil;
+import flixel.system.debug.watch.Tracker.TrackerProfile;
 import haxe.Log;
 import haxe.PosInfos;
 import openfl.Lib;
+import quench.objects.Enemy;
+import quench.objects.Entity;
+import quench.objects.PhysicsObject;
 
 using StringTools;
 
@@ -17,21 +21,47 @@ import sys.io.FileOutput;
 #end
 
 /**
- * Hey you, developer!
  * This class contains lots of utility functions for logging and debugging.
  * The goal is to integrate development more heavily with the HaxeFlixel debugger.
- * Use these methods to the fullest to produce mods efficiently!
  * 
  * @see https://haxeflixel.com/documentation/debugger/
  */
 class Debug {
-	private static final LOG_STYLE_ERROR:LogStyle = new LogStyle('[ERROR] ', 'FF8888', 12, true, false, false, 'flixel/sounds/beep', true);
-	private static final LOG_STYLE_WARN:LogStyle = new LogStyle('[WARN ] ', 'D9F85C', 12, true, false, false, 'flixel/sounds/beep', true);
-	private static final LOG_STYLE_INFO:LogStyle = new LogStyle('[INFO ] ', '5CF878', 12, false);
-	// TODO Java (or, at least, Apache Log4j 2) has a log level in between these two called "Debug" (as well as a level above Error called "Fatal"), and I'm a sucker for Java, so...
-	private static final LOG_STYLE_TRACE:LogStyle = new LogStyle('[TRACE] ', '5CF878', 12, false);
+	// I decided to merge Log4j2's log levels with HaxeFlixel's, which results in Log4j2's plus the "Notice" level.
+	// The colors used for them, with the exception of "Trace" for visibility reasons, are based on this: https://logging.apache.org/log4j/2.x/manual/layouts.html
+	private static final LOG_STYLE_FATAL:LogStyle = new LogStyle("[FATAL] ", "FF8888", 12, false, false, false, "flixel/sounds/beep", true);
+	private static final LOG_STYLE_ERROR:LogStyle = LogStyle.ERROR;
+	private static final LOG_STYLE_WARNING:LogStyle = LogStyle.WARNING;
+	private static final LOG_STYLE_NOTICE:LogStyle = LogStyle.NOTICE;
+	private static final LOG_STYLE_INFO:LogStyle = new LogStyle('[INFO] ', '5CF878');
+	private static final LOG_STYLE_DEBUG:LogStyle = new LogStyle('[DEBUG] ', '00FFFF');
+	private static final LOG_STYLE_TRACE:LogStyle = new LogStyle('[TRACE] ', 'FFFFFF');
+	public static final LOG_STYLES:Array<LogStyle> = [
+		LOG_STYLE_FATAL,
+		LOG_STYLE_ERROR,
+		LOG_STYLE_WARNING,
+		LOG_STYLE_NOTICE,
+		LOG_STYLE_INFO,
+		LOG_STYLE_DEBUG,
+		LOG_STYLE_TRACE
+	];
+	public static final LOG_STYLE_NAMES:Array<String> = [for (style in LOG_STYLES) style.prefix.replace("[", "").replace("]", "")];
 
 	private static var logFileWriter:DebugLogWriter;
+
+	/**
+	 * Log a fatal message to the game's console.
+	 * Plays a beep to the user and forces the console open if this is a debug build.
+	 * @param input The message to display.
+	 * @param pos This magic type is auto-populated, and includes the line number and class it was called from.
+	 */
+	public static inline function logFatal(input:Any, ?pos:PosInfos):Void {
+		if (input == null)
+			return;
+		var output:Array<Any> = formatOutput(input, pos);
+		writeToFlxGLog(output, LOG_STYLE_FATAL);
+		writeToLogFile(output, LOG_STYLE_FATAL);
+	}
 
 	/**
 	 * Log an error message to the game's console.
@@ -44,7 +74,7 @@ class Debug {
 			return;
 		var output:Array<Any> = formatOutput(input, pos);
 		writeToFlxGLog(output, LOG_STYLE_ERROR);
-		writeToLogFile(output, 'ERROR');
+		writeToLogFile(output, LOG_STYLE_ERROR);
 	}
 
 	/**
@@ -57,8 +87,21 @@ class Debug {
 		if (input == null)
 			return;
 		var output:Array<Any> = formatOutput(input, pos);
-		writeToFlxGLog(output, LOG_STYLE_WARN);
-		writeToLogFile(output, 'WARN');
+		writeToFlxGLog(output, LOG_STYLE_WARNING);
+		writeToLogFile(output, LOG_STYLE_WARNING);
+	}
+
+	/**
+	 * Log a notice message to the game's console. Only visible in debug builds.
+	 * @param input The message to display.
+	 * @param pos This magic type is auto-populated, and includes the line number and class it was called from.
+	 */
+	public static inline function logNotice(input:Any, ?pos:PosInfos):Void {
+		if (input == null)
+			return;
+		var output:Array<Any> = formatOutput(input, pos);
+		writeToFlxGLog(output, LOG_STYLE_NOTICE);
+		writeToLogFile(output, LOG_STYLE_NOTICE);
 	}
 
 	/**
@@ -71,7 +114,20 @@ class Debug {
 			return;
 		var output:Array<Any> = formatOutput(input, pos);
 		writeToFlxGLog(output, LOG_STYLE_INFO);
-		writeToLogFile(output, 'INFO');
+		writeToLogFile(output, LOG_STYLE_INFO);
+	}
+
+	/**
+	 * Log a debug message to the game's console. Only visible in debug builds.
+	 * @param input The message to display.
+	 * @param pos This magic type is auto-populated, and includes the line number and class it was called from.
+	 */
+	public static inline function logDebug(input:Any, ?pos:PosInfos):Void {
+		if (input == null)
+			return;
+		var output:Array<Any> = formatOutput(input, pos);
+		writeToFlxGLog(output, LOG_STYLE_DEBUG);
+		writeToLogFile(output, LOG_STYLE_DEBUG);
 	}
 
 	/**
@@ -85,7 +141,7 @@ class Debug {
 			return;
 		var output:Array<Any> = formatOutput(input, pos);
 		writeToFlxGLog(output, LOG_STYLE_TRACE);
-		writeToLogFile(output, 'TRACE');
+		writeToLogFile(output, LOG_STYLE_TRACE);
 	}
 
 	/**
@@ -125,10 +181,7 @@ class Debug {
 	 * @param value
 	 */
 	public static inline function quickWatch(name:String, value:Any):Void {
-		#if debug
 		FlxG.watch.addQuick(name == null ? 'QuickWatch' : name, value);
-		#end
-		// Else, do nothing outside of debug mode.
 	}
 
 	/**
@@ -170,7 +223,7 @@ class Debug {
 		trace('Initializing Debug tools...');
 
 		// Getting the original trace() function before overriding it.
-		var traceFunction:(v:Any, ?infos:PosInfos) -> Void = Log.trace;
+		var traceFunction:(v:Any, ?infos:PosInfos) -> Void = Log.trace; // No, HaxeCheckstyle, this is not a case of inner assignment. Shut up.
 
 		// Override Haxe's vanilla trace() calls to use the Flixel console.
 		Log.trace = (data:Any, ?info:PosInfos) -> {
@@ -190,9 +243,9 @@ class Debug {
 		// Start the log file writer.
 		// We have to set it to TRACE for now.
 		// We also set the log file writer's trace() calls to be directed to the original trace() function.
-		logFileWriter = new DebugLogWriter('TRACE', traceFunction);
+		logFileWriter = new DebugLogWriter(LOG_STYLE_TRACE, traceFunction);
 
-		logInfo('Debug logging initialized. Hello, developer.');
+		logInfo('Debug logging initialized.');
 
 		#if debug
 		logInfo('This is a DEBUG build.');
@@ -200,7 +253,7 @@ class Debug {
 		logInfo('This is a RELEASE build.');
 		#end
 		logInfo('HaxeFlixel version: ${Std.string(FlxG.VERSION)}');
-		logInfo('Quench version: ${Lib.application.meta.get('version')}');
+		logInfo('${Lib.application.meta.get('name')} version: ${Lib.application.meta.get('version')}');
 	}
 
 	/**
@@ -226,21 +279,20 @@ class Debug {
 		}
 	}
 
-	private static function writeToLogFile(data:Array<Any>, logLevel:String = 'TRACE'):Void {
+	private static function writeToLogFile(data:Array<Any>, logStyle:LogStyle):Void {
 		if (logFileWriter != null && logFileWriter.isActive()) {
-			logFileWriter.write(data, logLevel);
+			logFileWriter.write(data, logStyle);
 		}
 	}
 
 	/**
-	 * Defines what properties will be displayed in tracker windows for all these classes.
+	 * Defines what properties will be displayed in tracker windows for the given classes.
 	 */
 	private static function defineTrackerProfiles():Void {
-		// Example: This will display all the properties that FlxSprite does, along with curCharacter and barColor.
-		// FlxG.debugger.addTrackerProfile(new TrackerProfile(Character, ['id', 'isPlayer', 'barColor'], [FlxSprite]));
-		// FlxG.debugger.addTrackerProfile(new TrackerProfile(HealthIcon, ['char', 'isPlayer', 'isOldIcon'], [FlxSprite]));
-		// FlxG.debugger.addTrackerProfile(new TrackerProfile(Note, ['x', 'y', 'strumTime', 'mustPress', 'noteData', 'sustainLength'], []));
-		// FlxG.debugger.addTrackerProfile(new TrackerProfile(Song, ['id', 'scrollSpeed', 'player1', 'player2', 'gfVersion', 'noteSkin', 'stage'], []));
+		FlxG.debugger.addTrackerProfile(new TrackerProfile(PhysicsObject, null, [FlxSprite]));
+		FlxG.debugger.addTrackerProfile(new TrackerProfile(Entity, ["directionalAcceleration", "entityMovementSpeed", "isWalking", "noAcceleration"],
+			[PhysicsObject]));
+		FlxG.debugger.addTrackerProfile(new TrackerProfile(Enemy, ["target"], [Entity]));
 	}
 
 	/**
@@ -249,22 +301,23 @@ class Debug {
 	 */
 	private static inline function defineConsoleCommands():Void {
 		addConsoleCommand('setLogLevel', (logLevel:String) -> {
-			if (DebugLogWriter.LOG_LEVELS.contains(logLevel)) {
+			if (LOG_STYLE_NAMES.contains(logLevel)) {
 				Debug.logInfo('CONSOLE: Setting log level to $logLevel...');
 				logFileWriter.setLogLevel(logLevel);
 			} else {
 				Debug.logWarn('CONSOLE: Invalid log level $logLevel!');
-				Debug.logWarn('  Expected: ${DebugLogWriter.LOG_LEVELS.join(', ')}');
+				Debug.logWarn('  Expected one of: ${LOG_STYLE_NAMES.join(', ')}');
 			}
 		});
 	}
 
 	private static function formatOutput(input:Any, pos:PosInfos):Array<Any> {
 		// This code is junk but I kept getting Null Function References.
+		// TODO Make this code not "junk".
 		var inArray:Array<Any>;
 		if (input == null) {
 			inArray = ['<NULL>'];
-		} else if (Std.isOfType(input, Array)) {
+		} else if (input is Array) {
 			inArray = input;
 		} else {
 			inArray = [input];
@@ -282,71 +335,52 @@ class Debug {
 
 class DebugLogWriter {
 	private static final LOG_FOLDER:String = 'logs';
-	public static final LOG_LEVELS:Array<String> = ['ERROR', 'WARN', 'INFO', 'TRACE'];
 
 	public var traceFunction:(v:Any, ?infos:PosInfos) -> Void;
 
-	/**
-	 * Set this to the current timestamp that the game started.
-	 */
-	private var startTime:Float = 0;
-
 	private var logLevel:Int;
 
+	/**
+	 * Whether this DebugLogWriter has access to the file system.
+	 */
 	private var active:Bool = false;
+
 	#if sys
 	private var file:FileOutput;
 	#end
 
-	public function new(logLevelParam:String, traceFunction:(v:Any, ?infos:PosInfos) -> Void) {
-		logLevel = LOG_LEVELS.indexOf(logLevelParam);
+	public function new(logLevelParam:LogStyle, traceFunction:(v:Any, ?infos:PosInfos) -> Void) {
+		logLevel = Debug.LOG_STYLES.indexOf(logLevelParam);
 		this.traceFunction = traceFunction;
 
 		#if sys
-		printDebug('Initializing log file...');
+		print('Initializing log file...');
 
-		var logFilePath:String = Path.join([LOG_FOLDER, Path.withExtension(Std.string(getTime(true)), 'log')]);
+		var logFilePath:String = Path.join([LOG_FOLDER, Path.withExtension(Std.string(Date.now().getTime()), 'log')]);
 
 		// Make sure that the path exists
 		if (logFilePath.contains('/')) {
 			var lastIndex:Int = logFilePath.lastIndexOf('/');
 			var logFolderPath:String = logFilePath.substr(0, lastIndex);
-			printDebug('Creating log folder $logFolderPath');
+			print('Creating log folder $logFolderPath');
 			FileSystem.createDirectory(logFolderPath);
 		}
 		// Open the file
-		printDebug('Creating log file $logFilePath');
+		print('Creating log file $logFilePath');
 		file = File.write(logFilePath, false);
 		active = true;
 		#else
-		printDebug('Won\'t create log file; no file system access.');
-		active = true;
+		print('Can not create log file; no file system access.');
+		active = false;
 		#end
-
-		// Get the absolute time in seconds. This lets us show relative time in log, which is more readable.
-		startTime = getTime(true);
 	}
 
 	public function isActive():Bool {
 		return active;
 	}
 
-	/**
-	 * Get the time in seconds.
-	 * @param abs Whether the timestamp is absolute or relative to the start time.
-	 */
-	public inline function getTime(abs:Bool = false):Float {
-		#if sys
-		// Use this one on CPP and Neko since it's more accurate.
-		return abs ? Sys.time() : (Sys.time() - startTime);
-		#else
-		// This one is more accurate on non-CPP platforms.
-		return abs ? Date.now().getTime() : (Date.now().getTime() - startTime);
-		#end
-	}
-
-	private function shouldLog(input:String):Bool {
-		var levelIndex:Int = LOG_LEVELS.indexOf(input);
+	private function shouldLog(input:LogStyle):Bool {
+		var levelIndex:Int = Debug.LOG_STYLES.indexOf(input);
 		// Could not find this log level.
 		if (levelIndex == -1)
 			return false;
@@ -354,7 +388,7 @@ class DebugLogWriter {
 	}
 
 	public function setLogLevel(input:String):Void {
-		var levelIndex:Int = LOG_LEVELS.indexOf(input);
+		var levelIndex:Int = Debug.LOG_STYLE_NAMES.indexOf(input);
 		// Could not find this log level.
 		if (levelIndex == -1)
 			return;
@@ -366,27 +400,27 @@ class DebugLogWriter {
 	/**
 	 * Output text to the log file.
 	 */
-	public function write(input:Array<Any>, logLevel:String = 'TRACE'):Void {
-		var ts:String = FlxStringUtil.formatTime(getTime(), true);
-		var msg:String = '$ts [${logLevel.rpad(' ', 5)}] ${input.join('')}';
+	public function write(input:Array<Any>, logStyle:LogStyle):Void {
+		var ts:String = Date.now().toString();
+		var msg:String = '$ts ${logStyle.prefix} ${input.join('')}';
+
+		// Output text to the debug console directly.
+		if (shouldLog(logStyle)) {
+			print(msg);
+		}
 
 		#if sys
 		if (active && file != null) {
-			if (shouldLog(logLevel)) {
+			if (shouldLog(logStyle)) {
 				file.writeString('$msg\n');
 				file.flush();
 				file.flush();
 			}
 		}
 		#end
-
-		// Output text to the debug console directly.
-		if (shouldLog(logLevel)) {
-			printDebug(msg);
-		}
 	}
 
-	private function printDebug(msg:String):Void {
+	private function print(msg:String):Void {
 		// Pass no argument for the PosInfos to exclude the position.
 		traceFunction(msg);
 	}

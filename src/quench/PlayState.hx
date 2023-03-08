@@ -2,6 +2,7 @@ package quench;
 
 import flixel.FlxBasic;
 import flixel.FlxG;
+import flixel.FlxObject;
 import flixel.FlxState;
 import flixel.addons.weapon.FlxBullet;
 import flixel.addons.weapon.FlxWeapon;
@@ -10,18 +11,7 @@ import flixel.math.FlxPoint;
 import flixel.util.FlxColor;
 import flixel.util.FlxDestroyUtil;
 import flixel.util.helpers.FlxBounds;
-import quench.objects.BouncyThing;
-import quench.objects.Box;
-import quench.objects.Enemy;
-import quench.objects.Fucker;
-import quench.objects.HeavyBox;
-import quench.objects.Opponent;
-import quench.objects.PhysicsObject;
-import quench.objects.Player;
-import quench.objects.Ram;
-import quench.objects.Statue;
-import quench.objects.Trampoline;
-import quench.objects.Wall;
+import quench.objects.*;
 
 // TODO Use TileMaps for pathfinding, and also use FlxWeapon/FlxBullet to implement health stuff
 // TODO Use FlxControl for Player
@@ -33,7 +23,7 @@ class PlayState extends FlxState {
 
 	private var physicsObjects:FlxTypedGroup<FlxBasic>;
 	private var boundaries:FlxTypedGroup<PhysicsObject>;
-	private var removables:FlxTypedGroup<PhysicsObject>;
+	private var removables:FlxTypedGroup<FlxBasic>;
 
 	override public function create():Void {
 		super.create();
@@ -76,7 +66,7 @@ class PlayState extends FlxState {
 			PARENT(player, new FlxBounds(FlxPoint.get(player.width / 2 - bulletSize.x / 2, player.height / 2 - bulletSize.y / 2))),
 			SPEED(new FlxBounds<Float>(500, 500)));
 		weapon.bulletLifeSpan = new FlxBounds<Float>(2, 2);
-		// bulletSize.put(); // Can't do this because it gets reused in the bullet factory
+		// bulletSize.put(); // We can't do this because this FlxPoint gets reused in the bullet factory whenever the weapon is used.
 		bullets = new FlxTypedGroup();
 		physicsObjects.add(bullets);
 
@@ -109,13 +99,14 @@ class PlayState extends FlxState {
 			removables.add(newObj);
 		}
 		if (FlxG.keys.justPressed.SIX || (FlxG.keys.pressed.SIX && FlxG.keys.pressed.SHIFT)) {
-			var newObj:Enemy = new Fucker(player.x, player.y);
+			var newObj:Enemy = new Statue(player.x, player.y);
 			newObj.target = player;
 			removables.add(newObj);
 		}
 		if (FlxG.keys.justPressed.SEVEN || (FlxG.keys.pressed.SEVEN && FlxG.keys.pressed.SHIFT)) {
-			var newObj:Enemy = new Statue(player.x, player.y);
+			var newObj:Worm = new Worm(player.x, player.y);
 			newObj.target = player;
+			removables.add(newObj.children);
 			removables.add(newObj);
 		}
 
@@ -132,16 +123,34 @@ class PlayState extends FlxState {
 			}
 		}
 
+		if (FlxG.keys.justPressed.Z || (FlxG.keys.pressed.Z && FlxG.keys.pressed.SHIFT)) {
+			weapon.fireFromParentFacing(new FlxBounds<Float>(0)); // Fire a bullet with a direction based on the Player's "facing" value
+		}
+
+		if (FlxG.mouse.justPressed || (FlxG.mouse.pressed && FlxG.keys.pressed.SHIFT)) {
+			weapon.fireAtMouse(); // Fire a bullet at the mouse
+		}
+
+		// Without this line, the collisions will only happen within the area what the camera would see if it was at (0, 0), and nowhere else
+		// However, this only matters if the camera is being moved around by code like "camera.follow(player, NO_DEAD_ZONE)". If not, it's better to just comment this out.
+		// FlxG.worldBounds.set(FlxG.camera.x, FlxG.camera.y);
+		// FlxG.collide(physicsObjects, physicsObjects);
+		collide(physicsObjects, physicsObjects);
+
+		// Do this check after the collision, because, otherwise, the game acts as if the Player just moved extremely quickly from one position to another rather than teleporting
 		if (FlxG.keys.justPressed.T) {
 			player.screenCenter();
 		}
+	}
 
-		if (FlxG.keys.justPressed.Z) {
-			weapon.fireFromParentFacing(new FlxBounds<Float>(0));
-		}
-
-		// FIXME Not a bug on my end (I believe), but I am writing this as a reminder to report to the Flixel repository that collision does not occur outside of the camera's default view, even if FlxCamera.focusOn() is used to move the focus outside of the default view
-		FlxG.collide(physicsObjects, physicsObjects);
+	private static inline function collide(?ObjectOrGroup1:FlxBasic, ?ObjectOrGroup2:FlxBasic, ?NotifyCallback:(obj1:Dynamic, obj2:Dynamic) -> Void):Bool {
+		return FlxG.overlap(ObjectOrGroup1, ObjectOrGroup2, NotifyCallback, (obj1:Dynamic, obj2:Dynamic) -> {
+			if (obj1 is Worm.WormSegment && obj2 is Worm.WormSegment) {
+				return false;
+			} else {
+				return FlxObject.separate(obj1, obj2);
+			}
+		});
 	}
 
 	override public function destroy():Void {

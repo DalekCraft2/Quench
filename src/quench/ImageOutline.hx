@@ -13,17 +13,25 @@ using StringTools;
 // credits, original source https://lassieadventurestudio.wordpress.com/2008/10/07/image-outline/
 class ImageOutline {
 	/**
-	 * Renders a BitmapData display of any DisplayObject with an outline drawn around it.
-	 * @note: see param descriptions on "outline" method below.
+	 * Renders a BitmapData display of any IBitmapDrawable with an outline drawn around it.
+	 * Outline is rendered based on image's alpha channel.
+	 * @param src source IBitmapDrawable image to outline.
+	 * @param weight stroke thickness (in pixels) of outline.
+	 * @param color color of outline.
+	 * @param alpha opacity of outline (range of 0 to 1).
+	 * @param useMatrix if src is a DisplayObject, whether to use its transformation matrix when drawing the BitmapData.
+	 * @param antialias smooth edge (true), or jagged edge (false).
+	 * @param threshold Alpha sensitivity to source image (0 - 1). Used when drawing a jagged edge based on an antialiased source image.
+	 * @return BitmapData of rendered outline image.
 	 */
-	public static function renderImage(src:IBitmapDrawable, weight:Int, color:FlxColor, alpha:Float = 1, antialias:Bool = false,
+	public static function renderImage(src:IBitmapDrawable, weight:Int, color:FlxColor, alpha:Float = 1, useMatrix:Bool = true, antialias:Bool = false,
 			threshold:Float = 0.56):BitmapData {
 		var render:BitmapData = null;
 		if (src is DisplayObject) {
 			var dsp:DisplayObject = cast src;
 			var width:Int = Std.int(dsp.width);
 			var height:Int = Std.int(dsp.height);
-			var matrix:Matrix = dsp.transform.matrix;
+			var matrix:Matrix = useMatrix ? dsp.transform.matrix : null;
 			render = new BitmapData(width, height, true, FlxColor.TRANSPARENT);
 			render.draw(src, matrix);
 		} else if (src is BitmapData) {
@@ -39,13 +47,13 @@ class ImageOutline {
 	/**
 	 * Renders an outline around a BitmapData image.
 	 * Outline is rendered based on image's alpha channel.
-	 * @param src = source BitmapData image to outline.
-	 * @param weight = stroke thickness (in pixels) of outline.
-	 * @param color = color of outline.
-	 * @param alpha = opacity of outline (range of 0 to 1).
-	 * @param antialias = smooth edge (true), or jagged edge (false).
-	 * @param threshold = Alpha sensitivity to source image (0 - 1). Used when drawing a jagged edge based on an antialiased source image.
-	 * @return: BitmapData of rendered outline image.
+	 * @param src source BitmapData image to outline.
+	 * @param weight stroke thickness (in pixels) of outline.
+	 * @param color color of outline.
+	 * @param alpha opacity of outline (range of 0 to 1).
+	 * @param antialias smooth edge (true), or jagged edge (false).
+	 * @param threshold Alpha sensitivity to source image (0 - 1). Used when drawing a jagged edge based on an antialiased source image.
+	 * @return BitmapData of rendered outline image.
 	 */
 	public static function outline(src:BitmapData, weight:Int, color:FlxColor, alpha:Float = 1, antialias:Bool = false, threshold:Float = 0.56):BitmapData {
 		var brush:Int = (weight * 2) + 1;

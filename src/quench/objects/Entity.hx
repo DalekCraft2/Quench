@@ -8,6 +8,8 @@ class Entity extends PhysicsObject {
 	private var directionalAcceleration:FlxPoint = FlxPoint.get();
 	private var entityMovementSpeed:Float = 1;
 	private var isWalking:Bool = false;
+	/* FIXME This might be a HaxeFlixel bug, but, when noAcceleration is true and I push Enemies like Opponent against the left wall, they can't move away from the wall.
+		I feel like it might be related to collisionDrag, and that has a bug of only having effects on objects when the Player pushes them from the right or from the bottom. */
 	private var noAcceleration:Bool = false;
 
 	override public function destroy():Void {
