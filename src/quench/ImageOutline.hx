@@ -10,6 +10,7 @@ import openfl.geom.Rectangle;
 
 using StringTools;
 
+// TODO Maybe I can use flixel.addons.effects.chainable.FlxOutlineEffect instead of this
 // credits, original source https://lassieadventurestudio.wordpress.com/2008/10/07/image-outline/
 class ImageOutline {
 	/**

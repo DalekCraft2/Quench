@@ -4,6 +4,7 @@ import flixel.FlxG;
 import flixel.math.FlxMath;
 import flixel.util.FlxColor;
 import openfl.display.Bitmap;
+import openfl.display.PixelSnapping;
 import openfl.events.Event;
 import openfl.system.System;
 import openfl.text.TextField;
@@ -37,8 +38,8 @@ class FPSMem extends TextField {
 	private var bitmap:Bitmap;
 
 	@:noCompletion private var cacheCount:Int = 0;
-	@:noCompletion private var currentTime:Float = 0;
-	@:noCompletion private var times:Array<Float> = [];
+	@:noCompletion private var currentTime:Int = 0;
+	@:noCompletion private var times:Array<Int> = [];
 
 	/**
 	 * Takes an amount of bytes and finds the fitting unit. Makes sure that the
@@ -68,7 +69,8 @@ class FPSMem extends TextField {
 		text = "Frame Rate: " + currentFrameRate + "\n";
 		width += 200;
 
-		bitmap = new Bitmap(null, null, true);
+		// On the Flash target, pixelSnapping is not automatically set to PixelSnapping.AUTO if it is null, so we have to provide it manually
+		bitmap = new Bitmap(null, PixelSnapping.AUTO, true);
 		bitmap.x = this.x;
 		bitmap.y = this.y;
 

@@ -14,9 +14,10 @@ class Player extends Entity {
 	// private var control:FlxControlHandler;
 
 	public function new(?x:Float = 0, ?y:Float = 0) {
-		super(x, y);
+		super(x, y, FlxG.bitmap.create(40, 40, FlxColor.YELLOW));
 
-		makeGraphic(40, 40, FlxColor.YELLOW);
+		health = 10;
+
 		entityMovementSpeed = 2 * bigFactor;
 
 		// control = FlxControl.create(this, noAcceleration ? FlxControlHandler.MOVEMENT_INSTANT : FlxControlHandler.MOVEMENT_ACCELERATES,

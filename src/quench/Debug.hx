@@ -27,6 +27,7 @@ import sys.io.FileOutput;
  * @see https://haxeflixel.com/documentation/debugger/
  */
 class Debug {
+	// TODO Maybe use lime.utils.Log with this if that is public API
 	// I decided to merge Log4j2's log levels with HaxeFlixel's, which results in Log4j2's plus the "Notice" level.
 	// The colors used for them, with the exception of "Trace" for visibility reasons, are based on this: https://logging.apache.org/log4j/2.x/manual/layouts.html
 	private static final LOG_STYLE_FATAL:LogStyle = new LogStyle("[FATAL] ", "FF8888", 12, false, false, false, "flixel/sounds/beep", true);

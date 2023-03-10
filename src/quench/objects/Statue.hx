@@ -1,5 +1,6 @@
 package quench.objects;
 
+import flixel.FlxG;
 import flixel.math.FlxPoint;
 import flixel.util.FlxColor;
 import flixel.util.FlxDirectionFlags;
@@ -9,9 +10,9 @@ import flixel.util.FlxDirectionFlags;
  */
 class Statue extends Enemy {
 	public function new(?x:Float = 0, ?y:Float = 0) {
-		super(x, y);
+		super(x, y, FlxG.bitmap.create(40, 40, FlxColor.GRAY));
 
-		makeGraphic(40, 40, FlxColor.GRAY);
+		health = 20;
 
 		mass = 1.5;
 	}

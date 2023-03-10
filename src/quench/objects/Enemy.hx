@@ -16,6 +16,12 @@ class Enemy extends Entity {
 		updateDirectionalAcceleration();
 	}
 
+	override public function destroy():Void {
+		super.destroy();
+
+		target = null;
+	}
+
 	override private function updateDirectionalAcceleration():Void {
 		if (noAcceleration) {
 			velocity.zero();

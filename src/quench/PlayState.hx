@@ -1,13 +1,12 @@
 package quench;
 
+import quench.weapons.PlayerWeapon;
 import flixel.FlxBasic;
 import flixel.FlxG;
 import flixel.FlxObject;
 import flixel.FlxState;
-import flixel.addons.weapon.FlxBullet;
 import flixel.addons.weapon.FlxWeapon;
 import flixel.group.FlxGroup.FlxTypedGroup;
-import flixel.math.FlxPoint;
 import flixel.util.FlxColor;
 import flixel.util.FlxDestroyUtil;
 import flixel.util.helpers.FlxBounds;
@@ -18,8 +17,6 @@ import quench.objects.*;
 class PlayState extends FlxState {
 	public var player:Player;
 	public var weapon:FlxWeapon;
-
-	private var bullets:FlxTypedGroup<FlxBullet>;
 
 	private var physicsObjects:FlxTypedGroup<FlxBasic>;
 	private var boundaries:FlxTypedGroup<PhysicsObject>;
@@ -53,22 +50,8 @@ class PlayState extends FlxState {
 		player.screenCenter();
 		physicsObjects.add(player);
 
-		var bulletSize:FlxPoint = FlxPoint.get(16, 16);
-		weapon = new FlxWeapon("default_weapon", (weapon:FlxWeapon) -> {
-			var bullet:FlxBullet = bullets.recycle(FlxBullet, () -> {
-				var bullet:FlxBullet = new FlxBullet();
-				bullet.makeGraphic(Std.int(bulletSize.x), Std.int(bulletSize.y), FlxColor.BLACK);
-				return bullet;
-			});
-
-			return bullet;
-		},
-			PARENT(player, new FlxBounds(FlxPoint.get(player.width / 2 - bulletSize.x / 2, player.height / 2 - bulletSize.y / 2))),
-			SPEED(new FlxBounds<Float>(500, 500)));
-		weapon.bulletLifeSpan = new FlxBounds<Float>(2, 2);
-		// bulletSize.put(); // We can't do this because this FlxPoint gets reused in the bullet factory whenever the weapon is used.
-		bullets = new FlxTypedGroup();
-		physicsObjects.add(bullets);
+		weapon = new PlayerWeapon(player);
+		physicsObjects.add(weapon.group);
 
 		// camera.follow(player, NO_DEAD_ZONE);
 	}
@@ -117,10 +100,7 @@ class PlayState extends FlxState {
 			removables.clear();
 		}
 		if (FlxG.keys.justPressed.B) {
-			for (boundary in boundaries) {
-				boundary.solid = !boundary.solid;
-				boundary.visible = !boundary.visible;
-			}
+			boundaries.visible = !boundaries.visible;
 		}
 
 		if (FlxG.keys.justPressed.Z || (FlxG.keys.pressed.Z && FlxG.keys.pressed.SHIFT)) {
@@ -136,6 +116,7 @@ class PlayState extends FlxState {
 		// FlxG.worldBounds.set(FlxG.camera.x, FlxG.camera.y);
 		// FlxG.collide(physicsObjects, physicsObjects);
 		collide(physicsObjects, physicsObjects);
+		weapon.bulletsOverlap(physicsObjects);
 
 		// Do this check after the collision, because, otherwise, the game acts as if the Player just moved extremely quickly from one position to another rather than teleporting
 		if (FlxG.keys.justPressed.T) {
@@ -161,6 +142,5 @@ class PlayState extends FlxState {
 		removables = FlxDestroyUtil.destroy(removables);
 		boundaries = FlxDestroyUtil.destroy(boundaries);
 		weapon = null;
-		bullets = FlxDestroyUtil.destroy(bullets);
 	}
 }

@@ -1,7 +1,9 @@
 package quench.objects;
 
+import flixel.FlxG;
 import flixel.group.FlxGroup.FlxTypedGroup;
 import flixel.math.FlxPoint;
+import flixel.system.FlxAssets.FlxGraphicAsset;
 import flixel.util.FlxColor;
 import flixel.util.FlxDestroyUtil;
 
@@ -10,10 +12,12 @@ import flixel.util.FlxDestroyUtil;
  * Ram has my favorite AI, but Worm has my favorite appearance.
  */
 /*
-	TODO To make a worm, I first need to figure out how to apply "pulling" forces with Flixel so I can connect the body segments.Pushing forces are built in by default.
+	TODO To make a worm, I first need to figure out how to apply "pulling" forces with Flixel so I can connect the body segments. Pushing forces are built in by default.
 	I need to make those pulling forces affect not just the children of the given WormSegment, but also the parents, too, so doing something like impacting the middle with enough force would cause the whole Worm to move.
 	I also need to make the forces become stronger the further the segments are from their child and parent. This will keep the Worm from spreading apart too much, allowing me to set "noAcceleration" to "false" without the whole body being flung everywhere.
 	I also need to make it so Worms can collide with other Worms and their segments without colliding with their own segments.
+
+	Note: I might be able to use Nape to create the "pulling" forces what I mentioned. I need to learn how it works first, though.
  */
 class Worm extends WormSegment {
 	private static final WORM_LENGTH:Int = 100;
@@ -21,11 +25,10 @@ class Worm extends WormSegment {
 	public var children:FlxTypedGroup<WormSegment>;
 
 	public function new(?x:Float = 0, ?y:Float = 0) {
-		super(x, y);
+		super(x, y, FlxG.bitmap.create(40, 40, FlxColor.BLACK));
 
-		makeGraphic(40, 40, FlxColor.BLACK);
-
-		solid = true;
+		health = 10;
+		mass = 1;
 
 		children = new FlxTypedGroup();
 
@@ -50,6 +53,15 @@ class Worm extends WormSegment {
 		child = children.members[0];
 	}
 
+	override public function hurt(damage:Float):Void {
+		if (children.countLiving() > 0) {
+			var firstAlive:WormSegment = children.getFirstAlive();
+			firstAlive.hurt(damage);
+		} else {
+			super.hurt(damage);
+		}
+	}
+
 	override public function destroy():Void {
 		super.destroy();
 
@@ -58,25 +70,38 @@ class Worm extends WormSegment {
 }
 
 class WormSegment extends Enemy {
-	public var parent:WormSegment;
+	public var parent(default, set):WormSegment;
 	public var child:WormSegment;
 
-	public function new(?x:Float = 0, ?y:Float = 0) {
-		super(x, y);
+	public function new(?x:Float = 0, ?y:Float = 0, ?simpleGraphic:FlxGraphicAsset) {
+		super(x, y, simpleGraphic == null ? FlxG.bitmap.create(30, 30, FlxColor.WHITE) : simpleGraphic);
 
-		makeGraphic(30, 30, FlxColor.WHITE);
-
+		health = 3;
+		mass = 0.5;
 		noAcceleration = true;
 	}
-
-	// override public function update(elapsed:Float):Void {
-	// 	super.update(elapsed);
-	// }
 
 	override public function destroy():Void {
 		super.destroy();
 
 		parent = null; // I felt the need to set these to null instead of destroying them
 		child = null;
+	}
+
+	override public function kill():Void {
+		super.kill();
+
+		if (child != null) {
+			child.parent = parent;
+		}
+		if (parent != null) {
+			parent.child = child;
+		}
+	}
+
+	private function set_parent(value:WormSegment):WormSegment {
+		parent = value;
+		target = value;
+		return value;
 	}
 }
