@@ -13,7 +13,8 @@
 
     <!-- Minimum without FLX_NO_GAMEPAD: 11.8, without FLX_NO_NATIVE_CURSOR: 11.2 -->
     <!-- <set name="SWF_VERSION" value="11.8" /> -->
-    <set name="SWF_VERSION" value="14" />
+    <!-- I like to use the latest versions of things. -->
+    <set name="SWF_VERSION" value="43" />
 
     <!-- ____________________________ Window Settings ___________________________ -->
 

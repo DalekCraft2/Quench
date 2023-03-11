@@ -43,6 +43,7 @@ class Worm extends WormSegment {
 			children.insert(0, child);
 			if (i == 0) {
 				child.parent = this;
+				this.child = child;
 			} else {
 				child.parent = children.members[1];
 				children.members[1].child = child;
@@ -50,16 +51,6 @@ class Worm extends WormSegment {
 			child.target = child.parent;
 		}
 		midpoint.put();
-		child = children.members[0];
-	}
-
-	override public function hurt(damage:Float):Void {
-		if (children.countLiving() > 0) {
-			var firstAlive:WormSegment = children.getFirstAlive();
-			firstAlive.hurt(damage);
-		} else {
-			super.hurt(damage);
-		}
 	}
 
 	override public function destroy():Void {
@@ -76,7 +67,7 @@ class WormSegment extends Enemy {
 	public function new(?x:Float = 0, ?y:Float = 0, ?simpleGraphic:FlxGraphicAsset) {
 		super(x, y, simpleGraphic == null ? FlxG.bitmap.create(30, 30, FlxColor.WHITE) : simpleGraphic);
 
-		health = 3;
+		health = 1;
 		mass = 0.5;
 		noAcceleration = true;
 	}
@@ -90,12 +81,23 @@ class WormSegment extends Enemy {
 
 	override public function kill():Void {
 		super.kill();
-
 		if (child != null) {
 			child.parent = parent;
 		}
 		if (parent != null) {
 			parent.child = child;
+		}
+	}
+
+	override public function hurt(damage:Float):Void {
+		if (child != null && child.alive) {
+			child.hurt(damage);
+		} else {
+			var remainingDamage:Float = damage - health;
+			super.hurt(damage);
+			if (!alive && parent != null && parent.alive && remainingDamage > 0) {
+				parent.hurt(remainingDamage);
+			}
 		}
 	}
 

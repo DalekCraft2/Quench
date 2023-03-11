@@ -25,7 +25,7 @@ class Entity extends PhysicsObject {
 			acceleration.subtractPoint(directionalAcceleration);
 		}
 		directionalAcceleration.zero();
-		if (isWalking) {
+		if (alive && isWalking) {
 			if (facing.has(LEFT)) {
 				directionalAcceleration.x -= entityMovementSpeed * PhysicsObject.MOTION_FACTOR;
 			}

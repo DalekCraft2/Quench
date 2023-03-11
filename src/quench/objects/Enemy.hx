@@ -42,7 +42,7 @@ class Enemy extends Entity {
 		// 	directionalAcceleration.y += entityMovementSpeed * PhysicsObject.MOTION_FACTOR;
 		// }
 
-		if (isWalking) {
+		if (alive && isWalking) {
 			// This does not work with raw coordinates, for whatever reason, so I have to use midpoints.
 			var midpoint:FlxPoint = getMidpoint();
 			var targetMidpoint:FlxPoint = target.getMidpoint();
@@ -58,19 +58,23 @@ class Enemy extends Entity {
 		}
 	}
 
+	// TODO Make this not happen instantly and instead happen gradually
+	// TODO Make the requirements for looking straight in any direction (i.e. up, down, left, and right) more lenient
 	private function lookAtTarget():Void {
-		var midpoint:FlxPoint = getMidpoint();
-		var targetMidpoint:FlxPoint = target.getMidpoint();
-		var left:Bool = midpoint.x > targetMidpoint.x;
-		var right:Bool = midpoint.x < targetMidpoint.x;
-		var up:Bool = midpoint.y > targetMidpoint.y;
-		var down:Bool = midpoint.y < targetMidpoint.y;
-		var movementDirection:FlxDirectionFlags = FlxDirectionFlags.fromBools(left, right, up, down);
-		isWalking = movementDirection != NONE;
-		if (isWalking) {
-			facing = movementDirection;
+		if (alive) {
+			var midpoint:FlxPoint = getMidpoint();
+			var targetMidpoint:FlxPoint = target.getMidpoint();
+			var left:Bool = midpoint.x > targetMidpoint.x;
+			var right:Bool = midpoint.x < targetMidpoint.x;
+			var up:Bool = midpoint.y > targetMidpoint.y;
+			var down:Bool = midpoint.y < targetMidpoint.y;
+			var movementDirection:FlxDirectionFlags = FlxDirectionFlags.fromBools(left, right, up, down);
+			isWalking = movementDirection != NONE;
+			if (isWalking) {
+				facing = movementDirection;
+			}
+			midpoint.put();
+			targetMidpoint.put();
 		}
-		midpoint.put();
-		targetMidpoint.put();
 	}
 }
