@@ -3,6 +3,7 @@ package quench.objects;
 import flixel.FlxG;
 import flixel.group.FlxGroup.FlxTypedGroup;
 import flixel.math.FlxPoint;
+import flixel.path.FlxPath;
 import flixel.system.FlxAssets.FlxGraphicAsset;
 import flixel.util.FlxColor;
 import flixel.util.FlxDestroyUtil;
@@ -10,6 +11,7 @@ import flixel.util.FlxDestroyUtil;
 /**
  * Fracktail.
  * Ram has my favorite AI, but Worm has my favorite appearance.
+ * However, Worm also has better pathfinding. In fact, Worm has pathfinding at all.
  */
 /*
 	TODO To make a worm, I first need to figure out how to apply "pulling" forces with Flixel so I can connect the body segments. Pushing forces are built in by default.
@@ -29,6 +31,9 @@ class Worm extends WormSegment {
 
 		health = 10;
 		mass = 1;
+
+		// Use the pathfinding system to move
+		path = new FlxPath();
 
 		children = new FlxTypedGroup();
 

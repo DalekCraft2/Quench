@@ -1,8 +1,12 @@
 package quench.objects;
 
+import flixel.FlxG;
 import flixel.math.FlxPoint;
+import flixel.path.FlxPathfinder;
+import flixel.tile.FlxTilemap;
 import flixel.util.FlxDirectionFlags;
 
+// TODO Add idle behavior for when there is no target
 class Enemy extends Entity {
 	public var target:Entity;
 
@@ -43,7 +47,6 @@ class Enemy extends Entity {
 		// }
 
 		if (alive && isWalking) {
-			// This does not work with raw coordinates, for whatever reason, so I have to use midpoints.
 			var midpoint:FlxPoint = getMidpoint();
 			var targetMidpoint:FlxPoint = target.getMidpoint();
 			directionalAcceleration.set(1, 0);
@@ -51,15 +54,27 @@ class Enemy extends Entity {
 			// Make the acceleration constant regardless of direction
 			directionalAcceleration.length = entityMovementSpeed * PhysicsObject.MOTION_FACTOR;
 			if (noAcceleration) {
-				velocity.copyFrom(directionalAcceleration);
+				if (path == null) {
+					velocity.copyFrom(directionalAcceleration);
+				} else {
+					// TODO Make this code not awful
+					// TODO Figure out whether it is possible to use FlxPath with acceleration instead of velocity, for Enemies other than Worm
+					var state:PlayState = cast FlxG.state;
+					@:privateAccess var pathfinder:FlxPathfinder = state.pathfinder;
+					@:privateAccess var tilemap:FlxTilemap = state.tilemap;
+					var pathPoints:Array<FlxPoint> = pathfinder.findPath(cast tilemap, midpoint, targetMidpoint, NONE);
+					path.start(pathPoints, entityMovementSpeed * PhysicsObject.MOTION_FACTOR);
+				}
 			} else {
 				acceleration.addPoint(directionalAcceleration);
 			}
+			midpoint.put();
+			targetMidpoint.put();
 		}
 	}
 
 	// TODO Make this not happen instantly and instead happen gradually
-	// TODO Make the requirements for looking straight in any direction (i.e. up, down, left, and right) more lenient
+	// TODO Make the requirements for looking straight in any direction (i.e. up, down, left, and right) more lenient (in other words, the target does not have to be directly horizontal to the enemy for the enemy to face left or right)
 	private function lookAtTarget():Void {
 		if (alive) {
 			var midpoint:FlxPoint = getMidpoint();

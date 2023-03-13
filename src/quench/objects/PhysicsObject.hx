@@ -1,15 +1,14 @@
 package quench.objects;
 
-import flixel.util.FlxDestroyUtil;
 import flixel.FlxSprite;
 import flixel.system.FlxAssets.FlxGraphicAsset;
 import flixel.tweens.FlxTween;
+import flixel.util.FlxDestroyUtil;
 
 class PhysicsObject extends FlxSprite {
 	public static final MOTION_FACTOR:Float = 100;
 
 	private var deathTween:FlxTween;
-	private var deathTween2:FlxTween;
 
 	public function new(?x:Float = 0, ?y:Float = 0, ?simpleGraphic:FlxGraphicAsset) {
 		super(x, y, simpleGraphic);
@@ -28,11 +27,6 @@ class PhysicsObject extends FlxSprite {
 			deathTween.cancel();
 			deathTween = FlxDestroyUtil.destroy(deathTween);
 		}
-
-		if (deathTween2 != null) {
-			deathTween2.cancel();
-			deathTween2 = FlxDestroyUtil.destroy(deathTween2);
-		}
 	}
 
 	// HoloCure-inspired death animation.
@@ -45,9 +39,5 @@ class PhysicsObject extends FlxSprite {
 				exists = false;
 			}
 		});
-
-		// Tween the offset's x value instead of the object's x value so it does not interfere with the object's motion
-		// It also needs to be -25 when messing with the offset to get the same appearance as adding 25 to the object's x value
-		// deathTween2 = FlxTween.tween(offset, {x: x - 25}, deathTween.duration);
 	}
 }

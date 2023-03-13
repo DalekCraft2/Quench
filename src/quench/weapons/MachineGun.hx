@@ -11,7 +11,7 @@ import quench.objects.PhysicsObject;
 
 class MachineGun extends FlxTypedWeapon<FlxBullet> {
 	public function new(parent:FlxSprite) {
-		var bulletSize:FlxPoint = FlxPoint.get(16, 16);
+		var bulletSize:FlxPoint = FlxPoint.get(12, 12);
 		super("machine_gun", (weapon:FlxWeapon) -> {
 			var bullet:FlxBullet = new FlxBullet();
 			bullet.makeGraphic(Std.int(bulletSize.x), Std.int(bulletSize.y), FlxColor.BLACK);

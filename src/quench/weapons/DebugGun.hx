@@ -31,7 +31,7 @@ class DebugGun extends FlxTypedWeapon<FlxBullet> {
 			// var recoil:FlxPoint = currentBullet.velocity.scaleNew(currentBullet.mass);
 			// parent.velocity.subtractPoint(recoil); // Recoil.
 			// recoil.put();
-			// Just kidding. I absorbed the recoil.
+			// Just kidding. I absorbed the recoil. I'm pretty good!
 
 			currentBullet.camera.shake(0.001, 0.1);
 		});

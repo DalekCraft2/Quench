@@ -1,14 +1,15 @@
 package quench;
 
-import flixel.FlxCamera;
-import flixel.text.FlxText;
 import flixel.FlxBasic;
+import flixel.FlxCamera;
 import flixel.FlxG;
 import flixel.FlxObject;
 import flixel.FlxState;
 import flixel.addons.weapon.FlxWeapon;
 import flixel.group.FlxGroup.FlxTypedGroup;
 import flixel.math.FlxMath;
+import flixel.path.FlxPathfinder.FlxDiagonalPathfinder;
+import flixel.text.FlxText;
 import flixel.tile.FlxTilemap;
 import flixel.util.FlxArrayUtil;
 import flixel.util.FlxColor;
@@ -17,7 +18,6 @@ import haxe.io.Path;
 import quench.objects.*;
 import quench.weapons.*;
 
-// TODO Use TileMaps for pathfinding
 class PlayState extends FlxState {
 	private var hudCamera:FlxCamera;
 	private var weaponText:FlxText;
@@ -25,6 +25,8 @@ class PlayState extends FlxState {
 	private var weaponIndex:Int = 0;
 
 	private var tilemap:FlxTilemap;
+	private var pathfinder:FlxDiagonalPathfinder;
+
 	private var player:Player;
 	private var physicsObjects:FlxTypedGroup<FlxBasic>;
 	private var removables:FlxTypedGroup<FlxBasic>;
@@ -57,6 +59,8 @@ class PlayState extends FlxState {
 			Path.join(["assets", "images", Path.withExtension("full_tiles", "png")]), 16, 16, FULL);
 		tilemap.scale.set(FlxG.width / (tilemap.widthInTiles * tilemap.tileWidth), FlxG.height / (tilemap.heightInTiles * tilemap.tileHeight));
 		physicsObjects.add(tilemap);
+
+		pathfinder = new FlxDiagonalPathfinder();
 
 		removables = new FlxTypedGroup();
 		physicsObjects.add(removables);
