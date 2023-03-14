@@ -4,6 +4,7 @@ import flixel.FlxG;
 import flixel.math.FlxPoint;
 import flixel.path.FlxPathfinder;
 import flixel.tile.FlxTilemap;
+import flixel.util.FlxArrayUtil;
 import flixel.util.FlxDirectionFlags;
 
 // TODO Add idle behavior for when there is no target
@@ -13,7 +14,7 @@ class Enemy extends Entity {
 	override public function update(elapsed:Float):Void {
 		super.update(elapsed);
 
-		if (target != null) {
+		if (target != null && target.alive) {
 			lookAtTarget();
 		}
 
@@ -33,43 +34,36 @@ class Enemy extends Entity {
 			acceleration.subtractPoint(directionalAcceleration);
 		}
 		directionalAcceleration.zero();
-		// if (facing.has(LEFT)) {
-		// 	directionalAcceleration.x -= entityMovementSpeed * PhysicsObject.MOTION_FACTOR;
-		// }
-		// if (facing.has(RIGHT)) {
-		// 	directionalAcceleration.x += entityMovementSpeed * PhysicsObject.MOTION_FACTOR;
-		// }
-		// if (facing.has(UP)) {
-		// 	directionalAcceleration.y -= entityMovementSpeed * PhysicsObject.MOTION_FACTOR;
-		// }
-		// if (facing.has(DOWN)) {
-		// 	directionalAcceleration.y += entityMovementSpeed * PhysicsObject.MOTION_FACTOR;
-		// }
-
 		if (alive && isWalking) {
-			var midpoint:FlxPoint = getMidpoint();
-			var targetMidpoint:FlxPoint = target.getMidpoint();
-			directionalAcceleration.set(1, 0);
-			directionalAcceleration.degrees = midpoint.degreesTo(targetMidpoint);
-			// Make the acceleration constant regardless of direction
-			directionalAcceleration.length = entityMovementSpeed * PhysicsObject.MOTION_FACTOR;
-			if (noAcceleration) {
-				if (path == null) {
-					velocity.copyFrom(directionalAcceleration);
+			if (target != null && target.alive) {
+				var midpoint:FlxPoint = getMidpoint();
+				var targetMidpoint:FlxPoint = target.getMidpoint();
+				directionalAcceleration.set(1, 0);
+				directionalAcceleration.degrees = midpoint.degreesTo(targetMidpoint);
+				// Make the acceleration constant regardless of direction
+				directionalAcceleration.length = entityMovementSpeed * PhysicsObject.MOTION_FACTOR;
+				if (noAcceleration) {
+					if (path == null) {
+						velocity.copyFrom(directionalAcceleration);
+					} else {
+						// TODO Make this code not awful
+						// TODO Figure out whether it is possible to use FlxPath with acceleration instead of velocity, for Enemies other than Worm
+						var state:PlayState = cast FlxG.state;
+						@:privateAccess var tilemap:FlxTilemap = state.tilemap;
+						var pathPoints:Array<FlxPoint> = tilemap.findPath(midpoint, targetMidpoint, NONE, NONE);
+						path.start(pathPoints, entityMovementSpeed * PhysicsObject.MOTION_FACTOR);
+					}
 				} else {
-					// TODO Make this code not awful
-					// TODO Figure out whether it is possible to use FlxPath with acceleration instead of velocity, for Enemies other than Worm
-					var state:PlayState = cast FlxG.state;
-					@:privateAccess var pathfinder:FlxPathfinder = state.pathfinder;
-					@:privateAccess var tilemap:FlxTilemap = state.tilemap;
-					var pathPoints:Array<FlxPoint> = pathfinder.findPath(cast tilemap, midpoint, targetMidpoint, NONE);
-					path.start(pathPoints, entityMovementSpeed * PhysicsObject.MOTION_FACTOR);
+					acceleration.addPoint(directionalAcceleration);
 				}
-			} else {
-				acceleration.addPoint(directionalAcceleration);
+				midpoint.put();
+				targetMidpoint.put();
+			} else if (path != null && path.active) {
+				// Make the Enemy stop moving
+				path.active = false;
+				// Make the Enemy not instantly teleport to the end of the current path if the Player respawns
+				FlxArrayUtil.clearArray(path.nodes);
 			}
-			midpoint.put();
-			targetMidpoint.put();
 		}
 	}
 

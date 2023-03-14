@@ -75,9 +75,7 @@
         },
         {
             "type": "EmptyLines",
-            "props": {
-                "requireEmptyLineAfterPackage": true
-            }
+            "props": {}
         },
         {
             "type": "EmptyPackage",

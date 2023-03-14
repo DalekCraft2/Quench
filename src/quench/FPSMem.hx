@@ -1,11 +1,16 @@
 package quench;
 
 import flixel.FlxG;
+import flixel.addons.effects.chainable.FlxOutlineEffect;
 import flixel.math.FlxMath;
 import flixel.util.FlxColor;
 import openfl.display.Bitmap;
+import openfl.display.BitmapData;
+import openfl.display.DisplayObject;
+import openfl.display.IBitmapDrawable;
 import openfl.display.PixelSnapping;
 import openfl.events.Event;
+import openfl.geom.Matrix;
 import openfl.system.System;
 import openfl.text.TextField;
 import openfl.text.TextFormat;
@@ -36,6 +41,7 @@ class FPSMem extends TextField {
 	public var highestMem:Int = 0;
 
 	private var bitmap:Bitmap;
+	private var outlineEffect:FlxOutlineEffect;
 
 	@:noCompletion private var cacheCount:Int = 0;
 	@:noCompletion private var currentTime:Int = 0;
@@ -56,6 +62,27 @@ class FPSMem extends TextField {
 		return FlxMath.roundDecimal(bytes, precision) + " " + units[curUnit];
 	}
 
+	/**
+	 * Converts an IBitmapDrawable to a BitmapData.
+	 * @param src source IBitmapDrawable.
+	 * @param useTransformMatrix if src is a DisplayObject, whether to use its transformation matrix when drawing the BitmapData.
+	 * @return BitmapData created from source.
+	 */
+	public static function toBitmapData(src:IBitmapDrawable, useTransformMatrix:Bool = true):BitmapData {
+		var render:BitmapData = null;
+		if (src is DisplayObject) {
+			var dsp:DisplayObject = cast src;
+			var width:Int = Std.int(dsp.width);
+			var height:Int = Std.int(dsp.height);
+			var matrix:Matrix = useTransformMatrix ? dsp.transform.matrix : null;
+			render = new BitmapData(width, height, true, FlxColor.TRANSPARENT);
+			render.draw(src, matrix);
+		} else if (src is BitmapData) {
+			render = cast src;
+		}
+		return render;
+	}
+
 	public function new(x:Float = 0, y:Float = 0, color:FlxColor = FlxColor.BLACK) {
 		super();
 
@@ -73,6 +100,8 @@ class FPSMem extends TextField {
 		bitmap = new Bitmap(null, PixelSnapping.AUTO, true);
 		bitmap.x = this.x;
 		bitmap.y = this.y;
+
+		outlineEffect = new FlxOutlineEffect(NORMAL, FlxColor.BLACK);
 
 		addEventListener(Event.ADDED_TO_STAGE, (e:Event) -> {
 			parent.addChild(bitmap);
@@ -108,7 +137,7 @@ class FPSMem extends TextField {
 
 		if (currentMemory > highestMem)
 			highestMem = currentMemory;
-		if (currentCount != cacheCount /*&& visible*/) {
+		if (currentCount != cacheCount && visible) {
 			text = "";
 			text += "Frame Rate: " + currentFrameRate + "\n";
 			if (currentMemory < 0)
@@ -118,7 +147,7 @@ class FPSMem extends TextField {
 			text += "Memory Peak: " + formatBytes(highestMem) + "\n";
 
 			textColor = FlxColor.WHITE;
-			if (/*currentMemory > 3000 ||*/ currentFrameRate <= FlxG.drawFramerate / 2) {
+			if (currentFrameRate <= FlxG.drawFramerate / 2) {
 				textColor = FlxColor.RED;
 			}
 
@@ -131,7 +160,11 @@ class FPSMem extends TextField {
 
 		bitmap.x = x;
 		bitmap.y = y;
-		bitmap.bitmapData = ImageOutline.renderImage(this, 2, FlxColor.BLACK, 1, false);
+		bitmap.visible = visible;
+
+		outlineEffect.dirty = true;
+		var bitmapData:BitmapData = toBitmapData(this, false);
+		bitmap.bitmapData = outlineEffect.apply(bitmapData);
 
 		cacheCount = currentCount;
 	}

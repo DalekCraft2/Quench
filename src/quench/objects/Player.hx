@@ -5,8 +5,9 @@ import flixel.util.FlxColor;
 import flixel.util.FlxDirectionFlags;
 
 // TODO Use FlxControl for controls, maybe
-// TODO Add some functionality to damage the Player as well
+// TODO Make a keybind for reviving the Player
 // TODO Try not to use the facing variable so much for motion, so we can add analog directions for the Player
+// FIXME Weapon bullet offset does not update when making the Player bigger, because the player's width and height are only retrieved in the weapon's constructor
 class Player extends Entity {
 	private var big(default, set):Bool = false;
 	private var bigFactor:Float = 1;
@@ -56,7 +57,9 @@ class Player extends Entity {
 		} else {
 			bigFactor = 1;
 		}
-		// maxVelocity.set(bigFactor * PhysicsObject.MOTION_FACTOR, bigFactor * PhysicsObject.MOTION_FACTOR);
+		if (useMaxVelocity) {
+			maxVelocity.set(bigFactor * PhysicsObject.MOTION_FACTOR, bigFactor * PhysicsObject.MOTION_FACTOR);
+		}
 		scale.set(bigFactor, bigFactor);
 		updateHitbox();
 		mass = scale.x * scale.y;

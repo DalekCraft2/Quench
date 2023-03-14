@@ -4,6 +4,7 @@ import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.system.debug.log.LogStyle;
 import flixel.system.debug.watch.Tracker.TrackerProfile;
+import flixel.util.FlxStringUtil;
 import haxe.Log;
 import haxe.PosInfos;
 import openfl.Lib;
@@ -34,9 +35,9 @@ class Debug {
 	private static final LOG_STYLE_ERROR:LogStyle = LogStyle.ERROR;
 	private static final LOG_STYLE_WARNING:LogStyle = LogStyle.WARNING;
 	private static final LOG_STYLE_NOTICE:LogStyle = LogStyle.NOTICE;
-	private static final LOG_STYLE_INFO:LogStyle = new LogStyle('[INFO] ', '5CF878');
-	private static final LOG_STYLE_DEBUG:LogStyle = new LogStyle('[DEBUG] ', '00FFFF');
-	private static final LOG_STYLE_TRACE:LogStyle = new LogStyle('[TRACE] ', 'FFFFFF');
+	private static final LOG_STYLE_INFO:LogStyle = new LogStyle("[INFO] ", "5CF878");
+	private static final LOG_STYLE_DEBUG:LogStyle = new LogStyle("[DEBUG] ", "00FFFF");
+	private static final LOG_STYLE_TRACE:LogStyle = new LogStyle("[TRACE] ", "FFFFFF");
 	public static final LOG_STYLES:Array<LogStyle> = [
 		LOG_STYLE_FATAL,
 		LOG_STYLE_ERROR,
@@ -166,7 +167,7 @@ class Debug {
 	public static inline function watchVariable(object:Any, field:String, name:String):Void {
 		#if debug
 		if (object == null) {
-			Debug.logError('Tried to watch a variable on a null object!');
+			Debug.logError("Tried to watch a variable on a null object!");
 			return;
 		}
 		FlxG.watch.add(object, field, name == null ? field : name);
@@ -182,7 +183,7 @@ class Debug {
 	 * @param value
 	 */
 	public static inline function quickWatch(name:String, value:Any):Void {
-		FlxG.watch.addQuick(name == null ? 'QuickWatch' : name, value);
+		FlxG.watch.addQuick(name == null ? "QuickWatch" : name, value);
 	}
 
 	/**
@@ -209,7 +210,7 @@ class Debug {
 	 */
 	public static inline function trackObject(obj:Any):Void {
 		if (obj == null) {
-			Debug.logError('Tried to track a null object!');
+			Debug.logError("Tried to track a null object!");
 			return;
 		}
 		FlxG.debugger.track(obj);
@@ -221,7 +222,7 @@ class Debug {
 	 */
 	public static function onInitProgram():Void {
 		// Initialize logging tools.
-		trace('Initializing Debug tools...');
+		trace("Initializing Debug tools...");
 
 		// Getting the original trace() function before overriding it.
 		var traceFunction:(v:Any, ?infos:PosInfos) -> Void = Log.trace; // No, HaxeCheckstyle, this is not a case of inner assignment. Shut up.
@@ -246,15 +247,15 @@ class Debug {
 		// We also set the log file writer's trace() calls to be directed to the original trace() function.
 		logFileWriter = new DebugLogWriter(LOG_STYLE_TRACE, traceFunction);
 
-		logInfo('Debug logging initialized.');
+		logInfo("Debug logging initialized.");
 
 		#if debug
-		logInfo('This is a DEBUG build.');
+		logInfo("This is a DEBUG build.");
 		#else
-		logInfo('This is a RELEASE build.');
+		logInfo("This is a RELEASE build.");
 		#end
-		logInfo('HaxeFlixel version: ${Std.string(FlxG.VERSION)}');
-		logInfo('${Lib.application.meta.get('name')} version: ${Lib.application.meta.get('version')}');
+		logInfo("HaxeFlixel version: " + FlxG.VERSION.toString());
+		logInfo(Lib.application.meta.get("name") + " version: " + Lib.application.meta.get("version"));
 	}
 
 	/**
@@ -266,12 +267,6 @@ class Debug {
 
 		defineTrackerProfiles();
 		defineConsoleCommands();
-
-		// Now we can remember the log level.
-		// if (EngineData.save.data.debugLogLevel == null)
-		// 	EngineData.save.data.debugLogLevel = 'TRACE';
-
-		// logFileWriter.setLogLevel(EngineData.save.data.debugLogLevel);
 	}
 
 	private static function writeToFlxGLog(data:Array<Any>, logStyle:LogStyle):Void {
@@ -301,13 +296,13 @@ class Debug {
 	 * Feel free to add your own!
 	 */
 	private static inline function defineConsoleCommands():Void {
-		addConsoleCommand('setLogLevel', (logLevel:String) -> {
+		addConsoleCommand("setLogLevel", (logLevel:String) -> {
 			if (LOG_STYLE_NAMES.contains(logLevel)) {
-				Debug.logInfo('CONSOLE: Setting log level to $logLevel...');
+				Debug.logInfo("Setting log level to " + logLevel + "...");
 				logFileWriter.setLogLevel(logLevel);
 			} else {
-				Debug.logWarn('CONSOLE: Invalid log level $logLevel!');
-				Debug.logWarn('  Expected one of: ${LOG_STYLE_NAMES.join(', ')}');
+				Debug.logWarn("Invalid log level " + logLevel + "!");
+				Debug.logWarn("Expected one of: " + FlxStringUtil.formatArray(LOG_STYLE_NAMES));
 			}
 		});
 	}
@@ -317,7 +312,7 @@ class Debug {
 		// TODO Make this code not "junk".
 		var inArray:Array<Any>;
 		if (input == null) {
-			inArray = ['<NULL>'];
+			inArray = ["<NULL>"];
 		} else if (input is Array) {
 			inArray = input;
 		} else {
@@ -328,14 +323,14 @@ class Debug {
 			return inArray;
 
 		// Format the position ourselves.
-		var output:Array<Any> = ['(${pos.className}/${pos.methodName}#${pos.lineNumber}): '];
+		var output:Array<Any> = ["(" + pos.className + "/" + pos.methodName + "#" + pos.lineNumber + "): "];
 
 		return output.concat(inArray);
 	}
 }
 
 class DebugLogWriter {
-	private static final LOG_FOLDER:String = 'logs';
+	private static final LOG_FOLDER:String = "logs";
 
 	public var traceFunction:(v:Any, ?infos:PosInfos) -> Void;
 
@@ -355,23 +350,23 @@ class DebugLogWriter {
 		this.traceFunction = traceFunction;
 
 		#if sys
-		print('Initializing log file...');
+		print("Initializing log file...");
 
-		var logFilePath:String = Path.join([LOG_FOLDER, Path.withExtension(Std.string(Date.now().getTime()), 'log')]);
+		var logFilePath:String = Path.join([LOG_FOLDER, Path.withExtension(Std.string(Date.now().getTime()), "log")]);
 
 		// Make sure that the path exists
-		if (logFilePath.contains('/')) {
-			var lastIndex:Int = logFilePath.lastIndexOf('/');
+		if (logFilePath.contains("/")) {
+			var lastIndex:Int = logFilePath.lastIndexOf("/");
 			var logFolderPath:String = logFilePath.substr(0, lastIndex);
-			print('Creating log folder $logFolderPath');
+			print("Creating log folder " + logFolderPath);
 			FileSystem.createDirectory(logFolderPath);
 		}
 		// Open the file
-		print('Creating log file $logFilePath');
+		print("Creating log file " + logFilePath);
 		file = File.write(logFilePath, false);
 		active = true;
 		#else
-		print('Can not create log file; no file system access.');
+		print("Can not create log file; no file system access.");
 		active = false;
 		#end
 	}
@@ -395,7 +390,6 @@ class DebugLogWriter {
 			return;
 
 		logLevel = levelIndex;
-		// EngineData.save.data.debugLogLevel = logLevel;
 	}
 
 	/**
@@ -403,7 +397,8 @@ class DebugLogWriter {
 	 */
 	public function write(input:Array<Any>, logStyle:LogStyle):Void {
 		var ts:String = Date.now().toString();
-		var msg:String = '$ts ${logStyle.prefix} ${input.join('')}';
+		// TODO Why do we bother using an array if we combine it into a single string anyway?
+		var msg:String = ts + " " + logStyle.prefix + input.join("");
 
 		// Output text to the debug console directly.
 		if (shouldLog(logStyle)) {
@@ -413,7 +408,7 @@ class DebugLogWriter {
 		#if sys
 		if (active && file != null) {
 			if (shouldLog(logStyle)) {
-				file.writeString('$msg\n');
+				file.writeString(msg + "\n");
 				file.flush();
 				file.flush();
 			}

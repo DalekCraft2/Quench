@@ -8,7 +8,6 @@ import flixel.FlxState;
 import flixel.addons.weapon.FlxWeapon;
 import flixel.group.FlxGroup.FlxTypedGroup;
 import flixel.math.FlxMath;
-import flixel.path.FlxPathfinder.FlxDiagonalPathfinder;
 import flixel.text.FlxText;
 import flixel.tile.FlxTilemap;
 import flixel.util.FlxArrayUtil;
@@ -21,19 +20,20 @@ import quench.weapons.*;
 class PlayState extends FlxState {
 	private var hudCamera:FlxCamera;
 	private var weaponText:FlxText;
-	private var weapons:Array<FlxWeapon> = [];
+	private var playerWeapons:Array<FlxWeapon> = [];
 	private var weaponIndex:Int = 0;
 
+	private var weapons:Array<FlxWeapon> = [];
+
 	private var tilemap:FlxTilemap;
-	private var pathfinder:FlxDiagonalPathfinder;
 
 	private var player:Player;
 	private var physicsObjects:FlxTypedGroup<FlxBasic>;
 	private var removables:FlxTypedGroup<FlxBasic>;
 
-	private static inline function collide(?ObjectOrGroup1:FlxBasic, ?ObjectOrGroup2:FlxBasic, ?NotifyCallback:(obj1:Dynamic, obj2:Dynamic) -> Void):Bool {
-		// return FlxG.collide(physicsObjects, physicsObjects);
-		return FlxG.overlap(ObjectOrGroup1, ObjectOrGroup2, NotifyCallback, (obj1:Dynamic, obj2:Dynamic) -> {
+	// Slight edit of FlxG.collide().
+	private static inline function collide(?objectOrGroup1:FlxBasic, ?objectOrGroup2:FlxBasic, ?notifyCallback:(obj1:FlxObject, obj2:FlxObject) -> Void):Bool {
+		return FlxG.overlap(objectOrGroup1, objectOrGroup2, notifyCallback, (obj1:FlxObject, obj2:FlxObject) -> {
 			if (obj1 is Worm.WormSegment && obj2 is Worm.WormSegment) {
 				return false;
 			} else {
@@ -60,8 +60,6 @@ class PlayState extends FlxState {
 		tilemap.scale.set(FlxG.width / (tilemap.widthInTiles * tilemap.tileWidth), FlxG.height / (tilemap.heightInTiles * tilemap.tileHeight));
 		physicsObjects.add(tilemap);
 
-		pathfinder = new FlxDiagonalPathfinder();
-
 		removables = new FlxTypedGroup();
 		physicsObjects.add(removables);
 
@@ -70,14 +68,16 @@ class PlayState extends FlxState {
 		player.screenCenter();
 		physicsObjects.add(player);
 
-		weapons.push(new Revolver(player));
-		weapons.push(new MachineGun(player));
-		weapons.push(new RocketPropelledGrenade(player));
+		playerWeapons.push(new Revolver(player));
+		playerWeapons.push(new MachineGun(player));
+		playerWeapons.push(new RocketPropelledGrenade(player));
+		playerWeapons.push(new TankGun(player));
 		#if debug
-		weapons.push(new DebugGun(player));
+		playerWeapons.push(new DebugGun(player));
 		#end
-		for (weapon in weapons) {
+		for (weapon in playerWeapons) {
 			physicsObjects.add(weapon.group);
+			weapons.push(weapon);
 		}
 
 		hudCamera = new FlxCamera();
@@ -95,8 +95,15 @@ class PlayState extends FlxState {
 	override public function update(elapsed:Float):Void {
 		super.update(elapsed);
 
+		// This has to be checked here instead of in Player because update() is not called when Player is dead
+		if (FlxG.keys.justPressed.SPACE) {
+			player.revive();
+			player.health = 10;
+			player.solid = true;
+		}
+
 		if (FlxG.mouse.wheel != 0) {
-			weaponIndex = FlxMath.wrap(weaponIndex - FlxG.mouse.wheel, 0, weapons.length - 1);
+			weaponIndex = FlxMath.wrap(weaponIndex - FlxG.mouse.wheel, 0, playerWeapons.length - 1);
 		}
 
 		if (FlxG.keys.justPressed.ONE || (FlxG.keys.pressed.ONE && FlxG.keys.pressed.SHIFT)) {
@@ -132,12 +139,31 @@ class PlayState extends FlxState {
 			removables.add(newObj.children);
 			removables.add(newObj);
 		}
+		if (FlxG.keys.justPressed.EIGHT || (FlxG.keys.pressed.EIGHT && FlxG.keys.pressed.SHIFT)) {
+			var newObj:Gunner = new Gunner(player.x, player.y);
+			newObj.target = player;
+			removables.add(newObj);
+			weapons.push(newObj.weapon);
+			removables.add(newObj.weapon.group);
+		}
+		if (FlxG.keys.justPressed.NINE || (FlxG.keys.pressed.NINE && FlxG.keys.pressed.SHIFT)) {
+			var newObj:Tank = new Tank(player.x, player.y);
+			newObj.target = player;
+			removables.add(newObj);
+			weapons.push(newObj.weapon);
+			removables.add(newObj.weapon.group);
+		}
+		// I think I should save the ZERO key for something *really* big...
 
 		if (FlxG.keys.justPressed.R) {
 			for (physicsObject in removables) {
 				physicsObject.destroy();
 			}
 			removables.clear();
+			FlxArrayUtil.clearArray(weapons);
+			for (weapon in playerWeapons) {
+				weapons.push(weapon);
+			}
 		}
 		if (FlxG.keys.justPressed.B) {
 			tilemap.exists = !tilemap.exists;
@@ -154,7 +180,7 @@ class PlayState extends FlxState {
 			}
 		}
 
-		var weapon:FlxWeapon = weapons[weaponIndex];
+		var weapon:FlxWeapon = playerWeapons[weaponIndex];
 		if (player.alive) {
 			if (FlxG.mouse.pressed) {
 				// Fire a bullet at the mouse
@@ -166,8 +192,13 @@ class PlayState extends FlxState {
 		// However, this only matters if the camera is being moved around by code like "camera.follow(player, NO_DEAD_ZONE)". If not, it's better to just comment this out.
 		FlxG.worldBounds.set(FlxG.camera.x, FlxG.camera.y);
 
+		for (weapon in weapons) {
+			weapon.bulletsOverlap(tilemap); // This lets bullets call kill() on themselves when they overlap with the tilemap
+		}
 		collide(physicsObjects, physicsObjects);
-		weapon.bulletsOverlap(physicsObjects);
+		for (weapon in weapons) {
+			weapon.bulletsOverlap(physicsObjects);
+		}
 
 		// Do this check after the collision, because, otherwise, the game acts as if the Player just moved extremely quickly from one position to another rather than teleporting
 		if (FlxG.keys.justPressed.T) {
@@ -182,6 +213,8 @@ class PlayState extends FlxState {
 
 		hudCamera = FlxDestroyUtil.destroy(hudCamera);
 		weaponText = FlxDestroyUtil.destroy(weaponText);
+		FlxArrayUtil.clearArray(playerWeapons);
+		playerWeapons = null;
 		FlxArrayUtil.clearArray(weapons);
 		weapons = null;
 		tilemap = FlxDestroyUtil.destroy(tilemap);
@@ -192,7 +225,7 @@ class PlayState extends FlxState {
 
 	private function updateWeaponText():Void {
 		weaponText.text = "";
-		for (i => weapon in weapons) {
+		for (i => weapon in playerWeapons) {
 			if (i == weaponIndex) {
 				weaponText.text += "> ";
 			}
