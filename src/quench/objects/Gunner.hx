@@ -1,6 +1,5 @@
 package quench.objects;
 
-import flixel.FlxG;
 import flixel.util.FlxColor;
 import quench.weapons.QuenchWeapon;
 import quench.weapons.Revolver;
@@ -12,7 +11,10 @@ class Gunner extends Enemy {
 	public var weapon:QuenchWeapon;
 
 	public function new(?x:Float = 0, ?y:Float = 0) {
-		super(x, y, FlxG.bitmap.create(40, 40, FlxColor.BROWN));
+		// super(x, y, FlxG.bitmap.create(40, 40, FlxColor.BROWN));
+		super(x, y);
+
+		loadEntityFrames(FlxColor.BROWN);
 
 		health = 8;
 

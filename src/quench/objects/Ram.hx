@@ -1,6 +1,5 @@
 package quench.objects;
 
-import flixel.FlxG;
 import flixel.tweens.FlxTween;
 import flixel.util.FlxColor;
 import flixel.util.FlxDestroyUtil;
@@ -15,7 +14,10 @@ class Ram extends Enemy {
 	private var timer:FlxTimer;
 
 	public function new(?x:Float = 0, ?y:Float = 0) {
-		super(x, y, FlxG.bitmap.create(40, 40, FlxColor.WHITE)); // The color has to be set outside of the makeGraphic() call so the color tweens work.
+		// super(x, y, FlxG.bitmap.create(40, 40, FlxColor.WHITE)); // The color has to be set outside of the makeGraphic() call so the color tweens work.
+		super(x, y);
+
+		loadEntityFrames();
 
 		health = 10;
 

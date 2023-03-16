@@ -7,7 +7,6 @@ import flixel.FlxObject;
 import flixel.FlxState;
 import flixel.addons.weapon.FlxWeapon;
 import flixel.group.FlxGroup.FlxTypedGroup;
-import flixel.math.FlxMath;
 import flixel.text.FlxText;
 import flixel.tile.FlxTilemap;
 import flixel.util.FlxArrayUtil;
@@ -15,14 +14,10 @@ import flixel.util.FlxColor;
 import flixel.util.FlxDestroyUtil;
 import haxe.io.Path;
 import quench.objects.*;
-import quench.weapons.*;
 
 class PlayState extends FlxState {
 	private var hudCamera:FlxCamera;
 	private var weaponText:FlxText;
-	private var playerWeapons:Array<FlxWeapon> = [];
-	private var weaponIndex:Int = 0;
-
 	private var weapons:Array<FlxWeapon> = [];
 
 	private var tilemap:FlxTilemap;
@@ -55,9 +50,10 @@ class PlayState extends FlxState {
 		// Also, I took the tile graphics from the FlxTilemap demo.
 		// https://haxeflixel.com/demos/TileMap/
 		// I wonder whether I should change the extension to "csv"...
-		tilemap.loadMapFromCSV(Path.join(["assets", Path.withExtension("tilemap", "txt")]),
-			Path.join(["assets", "images", Path.withExtension("full_tiles", "png")]), 16, 16, FULL);
-		tilemap.scale.set(FlxG.width / (tilemap.widthInTiles * tilemap.tileWidth), FlxG.height / (tilemap.heightInTiles * tilemap.tileHeight));
+		tilemap.loadMapFromCSV(Path.join(["assets", Path.withExtension("tilemap", "csv")]),
+			Path.join(["assets", "images", "tiles", Path.withExtension("full_tiles", "png")]), 16, 16, FULL);
+		// tilemap.scale.set(FlxG.width / (tilemap.widthInTiles * tilemap.tileWidth), FlxG.height / (tilemap.heightInTiles * tilemap.tileHeight));
+		tilemap.scale.set(FlxG.width / (16 * tilemap.tileWidth), FlxG.height / (9 * tilemap.tileHeight));
 		physicsObjects.add(tilemap);
 
 		removables = new FlxTypedGroup();
@@ -68,14 +64,7 @@ class PlayState extends FlxState {
 		player.screenCenter();
 		physicsObjects.add(player);
 
-		playerWeapons.push(new Revolver(player));
-		playerWeapons.push(new MachineGun(player));
-		playerWeapons.push(new RocketPropelledGrenade(player));
-		playerWeapons.push(new TankGun(player));
-		#if debug
-		playerWeapons.push(new DebugGun(player));
-		#end
-		for (weapon in playerWeapons) {
+		for (weapon in player.weapons) {
 			physicsObjects.add(weapon.group);
 			weapons.push(weapon);
 		}
@@ -88,8 +77,24 @@ class PlayState extends FlxState {
 		weaponText.camera = hudCamera;
 		weaponText.setFormat(null, weaponText.size, FlxColor.WHITE, null, OUTLINE, FlxColor.BLACK);
 		add(weaponText);
-
 		updateWeaponText();
+
+		var spawnGuideText:FlxText = new FlxText(0, 0, 512,
+			"Spawn Guide:\n"
+			+ "1: Box\n"
+			+ "2: Heavy Box\n"
+			+ "3: Bouncy Thing\n"
+			+ "4: Opponent\n"
+			+ "5: Ram\n"
+			+ "6: Statue\n"
+			+ "7: Worm\n"
+			+ "8: Tank",
+			16);
+		spawnGuideText.camera = hudCamera;
+		spawnGuideText.setFormat(null, weaponText.size, FlxColor.WHITE, RIGHT, OUTLINE, FlxColor.BLACK);
+		spawnGuideText.screenCenter(Y);
+		spawnGuideText.x = FlxG.width - spawnGuideText.width;
+		add(spawnGuideText);
 	}
 
 	override public function update(elapsed:Float):Void {
@@ -100,10 +105,6 @@ class PlayState extends FlxState {
 			player.revive();
 			player.health = 10;
 			player.solid = true;
-		}
-
-		if (FlxG.mouse.wheel != 0) {
-			weaponIndex = FlxMath.wrap(weaponIndex - FlxG.mouse.wheel, 0, playerWeapons.length - 1);
 		}
 
 		if (FlxG.keys.justPressed.ONE || (FlxG.keys.pressed.ONE && FlxG.keys.pressed.SHIFT)) {
@@ -161,7 +162,7 @@ class PlayState extends FlxState {
 			}
 			removables.clear();
 			FlxArrayUtil.clearArray(weapons);
-			for (weapon in playerWeapons) {
+			for (weapon in player.weapons) {
 				weapons.push(weapon);
 			}
 		}
@@ -180,19 +181,12 @@ class PlayState extends FlxState {
 			}
 		}
 
-		var weapon:FlxWeapon = playerWeapons[weaponIndex];
-		if (player.alive) {
-			if (FlxG.mouse.pressed) {
-				// Fire a bullet at the mouse
-				weapon.fireAtMouse();
-			}
-		}
-
 		// Without this line, the collisions will only happen within the area what the camera would see if it was at (0, 0), and nowhere else
 		// However, this only matters if the camera is being moved around by code like "camera.follow(player, NO_DEAD_ZONE)". If not, it's better to just comment this out.
-		FlxG.worldBounds.set(FlxG.camera.x, FlxG.camera.y);
+		FlxG.worldBounds.setPosition(camera.scroll.x, camera.scroll.y);
 
 		for (weapon in weapons) {
+			weapon.bounds.copyFrom(FlxG.worldBounds);
 			weapon.bulletsOverlap(tilemap); // This lets bullets call kill() on themselves when they overlap with the tilemap
 		}
 		collide(physicsObjects, physicsObjects);
@@ -213,8 +207,6 @@ class PlayState extends FlxState {
 
 		hudCamera = FlxDestroyUtil.destroy(hudCamera);
 		weaponText = FlxDestroyUtil.destroy(weaponText);
-		FlxArrayUtil.clearArray(playerWeapons);
-		playerWeapons = null;
 		FlxArrayUtil.clearArray(weapons);
 		weapons = null;
 		tilemap = FlxDestroyUtil.destroy(tilemap);
@@ -224,9 +216,9 @@ class PlayState extends FlxState {
 	}
 
 	private function updateWeaponText():Void {
-		weaponText.text = "";
-		for (i => weapon in playerWeapons) {
-			if (i == weaponIndex) {
+		weaponText.text = "Weapons:\n";
+		for (i => weapon in player.weapons) {
+			if (i == player.weaponIndex) {
 				weaponText.text += "> ";
 			}
 			weaponText.text += weapon.name;

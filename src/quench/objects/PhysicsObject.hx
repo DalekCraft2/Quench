@@ -36,7 +36,7 @@ class PhysicsObject extends FlxSprite {
 	// HoloCure-inspired death animation.
 	override public function kill():Void {
 		alive = false;
-		solid = false;
+		// solid = false;
 
 		deathTween = FlxTween.tween(this, {alpha: 0, angle: angle + 45}, 0.25, {
 			onComplete: (tween:FlxTween) -> {

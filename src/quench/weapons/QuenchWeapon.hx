@@ -11,6 +11,7 @@ import flixel.util.helpers.FlxBounds;
 
 // TODO Add Davy Crockett.
 // TODO Make sprites for the weapons and have them show up aiming at where the AI/Player is aiming
+// TODO Add reload times and ammo number
 class QuenchWeapon extends FlxTypedWeapon<FlxBullet> {
 	public var recoil:Bool = true;
 	public var fireShakeIntensity:Float;

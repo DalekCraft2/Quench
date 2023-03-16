@@ -1,6 +1,5 @@
 package quench.objects;
 
-import flixel.FlxG;
 import flixel.util.FlxColor;
 
 /**
@@ -8,7 +7,10 @@ import flixel.util.FlxColor;
  */
 class Opponent extends Enemy {
 	public function new(?x:Float = 0, ?y:Float = 0) {
-		super(x, y, FlxG.bitmap.create(40, 40, FlxColor.RED));
+		// super(x, y, FlxG.bitmap.create(40, 40, FlxColor.RED));
+		super(x, y);
+
+		loadEntityFrames(FlxColor.RED);
 
 		health = 4;
 	}

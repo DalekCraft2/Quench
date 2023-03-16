@@ -1,51 +1,34 @@
 package quench.objects;
 
-import flixel.FlxG;
-import flixel.math.FlxPoint;
 import flixel.util.FlxColor;
-import flixel.util.FlxDirectionFlags;
 
 /**
  * Weeping Angel. Or SCP-173. Take your pick.
  */
 class Statue extends Enemy {
 	public function new(?x:Float = 0, ?y:Float = 0) {
-		super(x, y, FlxG.bitmap.create(40, 40, FlxColor.GRAY));
+		// super(x, y, FlxG.bitmap.create(40, 40, FlxColor.GRAY));
+		super(x, y);
+
+		loadEntityFrames(FlxColor.GRAY);
 
 		health = 20;
 
 		mass = 1.5;
+
+		entityMovementSpeed = 3;
+		drag.set(3 * PhysicsObject.MOTION_FACTOR, 3 * PhysicsObject.MOTION_FACTOR);
 	}
 
-	override private function lookAtTarget():Void {
-		var midpoint:FlxPoint = getMidpoint();
-		var targetMidpoint:FlxPoint = target.getMidpoint();
-		var left:Bool = midpoint.x > targetMidpoint.x;
-		var right:Bool = midpoint.x < targetMidpoint.x;
-		var up:Bool = midpoint.y > targetMidpoint.y;
-		var down:Bool = midpoint.y < targetMidpoint.y;
-		var movementDirection:FlxDirectionFlags = FlxDirectionFlags.fromBools(left, right, up, down);
-
-		var isSeen:Bool = false;
-		if (left && target.facing.has(RIGHT)) {
-			isSeen = true;
-		}
-		if (right && target.facing.has(LEFT)) {
-			isSeen = true;
-		}
-		if (up && target.facing.has(DOWN)) {
-			isSeen = true;
-		}
-		if (down && target.facing.has(UP)) {
-			isSeen = true;
+	override public function update(elapsed:Float):Void {
+		var tempTarget:Entity = target;
+		if (target != null && target.alive && target.canSee(this)) {
+			target = this; // This sets the animation frame to 0, which I think looks better somehow
+			// target = null;
 		}
 
-		// isWalking = movementDirection != NONE && target.isWalking;
-		isWalking = movementDirection != NONE && !isSeen;
-		if (isWalking) {
-			facing = movementDirection;
-		}
-		midpoint.put();
-		targetMidpoint.put();
+		super.update(elapsed);
+
+		target = tempTarget;
 	}
 }
