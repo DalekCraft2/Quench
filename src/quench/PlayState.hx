@@ -88,7 +88,8 @@ class PlayState extends FlxState {
 			+ "5: Ram\n"
 			+ "6: Statue\n"
 			+ "7: Worm\n"
-			+ "8: Tank",
+			+ "8: Gunner\n"
+			+ "9: Tank",
 			16);
 		spawnGuideText.camera = hudCamera;
 		spawnGuideText.setFormat(null, weaponText.size, FlxColor.WHITE, RIGHT, OUTLINE, FlxColor.BLACK);

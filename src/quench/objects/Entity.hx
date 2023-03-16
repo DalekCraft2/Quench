@@ -155,7 +155,7 @@ class Entity extends PhysicsObject {
 						velocity.copyFrom(directionalAcceleration);
 					} else {
 						// TODO Make this code not awful
-						// TODO Figure out whether it is possible to use FlxPath with acceleration instead of velocity, for Enemies other than Worm
+						// TODO Figure out whether it is possible to use FlxPath with acceleration instead of velocity, for Enemies other than Worm and Tank (which both use pathfinding)
 						var state:PlayState = cast FlxG.state;
 						@:privateAccess var tilemap:FlxTilemap = state.tilemap;
 						var pathPoints:Array<FlxPoint> = tilemap.findPath(midpoint, destinationPoint, RAY_BOX(width, height));
