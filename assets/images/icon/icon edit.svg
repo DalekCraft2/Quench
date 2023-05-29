@@ -37,27 +37,7 @@
      inkscape:cx="105"
      inkscape:cy="120.5" />
   <defs
-     id="defs2">
-    <clipPath
-       clipPathUnits="userSpaceOnUse"
-       id="clipPath11523">
-      <circle
-         style="display:none;fill:#000000;fill-opacity:1;stroke-width:0.198;stroke-dasharray:none"
-         id="circle11525"
-         cx="32.000004"
-         cy="32.000004"
-         inkscape:label="Mask"
-         r="22.5" />
-    </clipPath>
-  </defs>
-  <circle
-     style="display:none;fill:#878787;fill-opacity:1;stroke:none;stroke-width:0.265;stroke-dasharray:none;stroke-opacity:1"
-     id="circle4139"
-     inkscape:label="Circle old"
-     clip-path="url(#clipPath11523)"
-     cx="32"
-     cy="32"
-     r="30" />
+     id="defs2" />
   <circle
      style="display:inline;fill:none;fill-opacity:1;stroke:#878787;stroke-width:7.5;stroke-dasharray:none;stroke-opacity:1"
      id="path113"

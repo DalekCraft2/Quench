@@ -14,5 +14,9 @@ class MachineGun extends QuenchWeapon {
 		bulletDamage = 1;
 		fireShakeIntensity = 0.001;
 		fireShakeDuration = 0.1;
+
+		reloadTime = 1000;
+		maxAmmo = 50;
+		ammo = maxAmmo;
 	}
 }

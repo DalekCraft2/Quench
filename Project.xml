@@ -5,21 +5,27 @@
 
     <!-- _________________________ Application Settings _________________________ -->
 
-    <app title="Quench" file="Quench" packageName="me.dalekcraft.quench" package="me.dalekcraft.quench" main="quench.Main" version="0.1" company="DalekCraft" />
+    <app main="quench.Main" file="Quench" />
 
-    <!-- The flixel preloader is not accurate in Chrome. You can use it regularly if you embed the swf into a html file
-        or you can set the actual size of your file manually at "FlxPreloaderBase-onUpdate-bytesTotal" -->
+    <!-- The Flixel preloader is not accurate in Chrome. You can use it regularly if you embed the SWF into an HTML file,
+        or you can set the actual size of your file manually with the "bytesTotal" argument of "FlxPreloaderBase#onUpdate(bytesLoaded, bytesTotal)" -->
     <app preloader="flixel.system.FlxPreloader" />
 
-    <!-- Minimum without FLX_NO_GAMEPAD: 11.8, without FLX_NO_NATIVE_CURSOR: 11.2 -->
-    <!-- <set name="SWF_VERSION" value="11.8" /> -->
+    <!-- Minimum without FLX_NO_GAMEPAD: 11.8; without FLX_NO_NATIVE_CURSOR: 11.2 -->
+    <app min-swf-version="11.8" />
     <!-- I like to use the latest versions of things. -->
-    <set name="SWF_VERSION" value="43" />
+    <!-- <app swf-version="43" /> -->
+    <app swf-version="11.8" />
+
+    <meta title="Quench" package="me.dalekcraft.quench" version="0.1" company="DalekCraft" />
+
+    <!-- Flixel needs this in the metadata too because it uses it for the save file's location -->
+    <meta file="Quench" />
 
     <!-- ____________________________ Window Settings ___________________________ -->
 
     <!-- These window settings apply to all targets -->
-    <window width="1280" height="720" fps="60" background="#000000" hardware="true" vsync="false" />
+    <window width="1280" height="720" fps="60" background="0x000000" hardware="true" vsync="false" />
 
     <!-- HTML5-specific -->
     <window if="html5" resizable="false" />
@@ -36,7 +42,7 @@
 
     <assets path="assets" />
 
-    <assets path='LICENSE.txt' />
+    <assets path="LICENSE.txt" />
 
     <!-- _______________________________ Libraries ______________________________ -->
 
@@ -46,7 +52,7 @@
     <haxelib name="flixel-addons" />
 
     <!-- In case you want to use the ui package -->
-    <haxelib name="flixel-ui" />
+    <!-- <haxelib name="flixel-ui" /> -->
 
     <!-- TODO Nape is a physics engine. Maybe I can use that for this project. -->
     <!-- In case you want to use nape with flixel -->

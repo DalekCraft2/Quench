@@ -7,14 +7,14 @@ import flixel.util.FlxColor;
  */
 class Statue extends Enemy {
 	public function new(?x:Float = 0, ?y:Float = 0) {
-		// super(x, y, FlxG.bitmap.create(40, 40, FlxColor.GRAY));
 		super(x, y);
 
 		loadEntityFrames(FlxColor.GRAY);
 
-		health = 20;
+		initializeHealth(20);
 
 		mass = 1.5;
+		elasticity = 0.3;
 
 		entityMovementSpeed = 3;
 		drag.set(3 * PhysicsObject.MOTION_FACTOR, 3 * PhysicsObject.MOTION_FACTOR);

@@ -17,5 +17,9 @@ class RocketPropelledGrenade extends QuenchWeapon {
 		fireShakeDuration = 0.2;
 		hitShakeIntensity = 0.01;
 		hitShakeDuration = 0.1;
+
+		reloadTime = 1000;
+		maxAmmo = 1;
+		ammo = maxAmmo;
 	}
 }

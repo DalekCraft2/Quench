@@ -1,18 +1,16 @@
 package quench.objects;
 
 import flixel.FlxG;
-import flixel.addons.weapon.FlxWeapon;
 import flixel.input.actions.FlxAction.FlxActionDigital;
 import flixel.input.actions.FlxActionManager;
 import flixel.math.FlxMath;
 import flixel.math.FlxPoint;
-import flixel.util.FlxArrayUtil;
 import flixel.util.FlxColor;
 import flixel.util.FlxDestroyUtil;
 import flixel.util.FlxDirectionFlags;
 import quench.weapons.*;
 
-// FIXME Weapon bullet offset does not update when making the Player bigger, because the player's width and height are only retrieved in the weapon's constructor
+// TODO Add a way to heal with items
 class Player extends Entity {
 	private var actionManager:FlxActionManager;
 	private var moveLeft:FlxActionDigital = new FlxActionDigital("move_left");
@@ -24,19 +22,20 @@ class Player extends Entity {
 	private var changeSize:FlxActionDigital = new FlxActionDigital("change_size");
 	private var noclip:FlxActionDigital = new FlxActionDigital("noclip");
 
-	public var weapons:Array<FlxWeapon> = [];
+	public var weapons:Array<QuenchWeapon> = [];
 	public var weaponIndex:Int = 0;
 
 	private var big(default, set):Bool = false;
 	private var bigFactor:Float = 1;
 
 	public function new(?x:Float = 0, ?y:Float = 0) {
-		// super(x, y, FlxG.bitmap.create(40, 40, FlxColor.YELLOW));
 		super(x, y);
 
 		loadEntityFrames(FlxColor.YELLOW);
 
-		health = 10;
+		initializeHealth(10);
+
+		// useAcceleration = false;
 
 		entityMovementSpeed = 2 * bigFactor;
 
@@ -63,6 +62,7 @@ class Player extends Entity {
 		weapons.push(new MachineGun(this));
 		weapons.push(new RocketPropelledGrenade(this));
 		weapons.push(new TankGun(this));
+		weapons.push(new MedKit(this));
 		#if debug
 		weapons.push(new DebugGun(this));
 		#end
@@ -84,19 +84,6 @@ class Player extends Entity {
 				}
 			}
 
-			var left:Bool = moveLeft.triggered;
-			var right:Bool = moveRight.triggered;
-			var up:Bool = moveUp.triggered;
-			var down:Bool = moveDown.triggered;
-			var movementDirection:FlxDirectionFlags = FlxDirectionFlags.fromBools(left, right, up, down);
-			destinationPoint.zero();
-			if (movementDirection != NONE) {
-				// facing = movementDirection;
-				destinationPoint.set(0, 1);
-				destinationPoint.degrees = movementDirection.degrees;
-			}
-			destinationPoint.addPoint(getMidpoint(FlxPoint.weak()));
-
 			var mousePoint:FlxPoint = FlxG.mouse.getPosition();
 			lookAtPoint(mousePoint);
 			mousePoint.put();
@@ -109,8 +96,6 @@ class Player extends Entity {
 				weapons[weaponIndex].fireAtMouse();
 			}
 		}
-
-		updateDirectionalAcceleration();
 	}
 
 	override public function destroy():Void {
@@ -126,14 +111,29 @@ class Player extends Entity {
 		changeSize = FlxDestroyUtil.destroy(changeSize);
 		noclip = FlxDestroyUtil.destroy(noclip);
 
-		FlxArrayUtil.clearArray(weapons);
-		weapons = null;
+		weapons = FlxDestroyUtil.destroyArray(weapons);
+	}
+
+	override private function updateDestinationPoint():Void {
+		super.updateDestinationPoint();
+
+		var left:Bool = moveLeft.triggered;
+		var right:Bool = moveRight.triggered;
+		var up:Bool = moveUp.triggered;
+		var down:Bool = moveDown.triggered;
+		var movementDirection:FlxDirectionFlags = FlxDirectionFlags.fromBools(left, right, up, down);
+		destinationPoint.zero();
+		if (movementDirection != NONE) {
+			destinationPoint.set(0, 1);
+			destinationPoint.degrees = movementDirection.degrees;
+		}
+		destinationPoint.addPoint(getMidpoint(FlxPoint.weak()));
 	}
 
 	private function set_big(value:Bool):Bool {
 		big = value;
 		if (big) {
-			bigFactor = 6;
+			bigFactor = 2;
 		} else {
 			bigFactor = 1;
 		}
@@ -144,6 +144,15 @@ class Player extends Entity {
 		updateHitbox();
 		mass = scale.x * scale.y;
 		entityMovementSpeed = 2 * bigFactor;
+		// FIXME Weapon bullet offset does not update when making the Player bigger, because the player's width and height are only retrieved in the weapon's constructor
+		// for (weapon in weapons) {
+		// 	switch (weapon.fireFrom) {
+		// 		case PARENT(parent, offset, useParentAngle, angleOffset):
+		// 			getMidpoint(offset.min);
+		// 		// getMidpoint(offset.max);
+		// 		case POSITION(position):
+		// 	}
+		// }
 		return value;
 	}
 }

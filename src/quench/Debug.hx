@@ -52,7 +52,7 @@ class Debug {
 	private static var logFileWriter:DebugLogWriter;
 
 	/**
-	 * Log a fatal message to the game's console.
+	 * Logs a fatal message to the game's console.
 	 * Plays a beep to the user and forces the console open if this is a debug build.
 	 * @param input The message to display.
 	 * @param pos This magic type is auto-populated, and includes the line number and class it was called from.
@@ -66,10 +66,10 @@ class Debug {
 	}
 
 	/**
-	 * Log an error message to the game's console.
+	 * Logs an error message to the game's console.
 	 * Plays a beep to the user and forces the console open if this is a debug build.
 	 * @param input The message to display.
-	 * @param pos This magic type is auto-populated, and includes the line number and class it was called from.
+	 * @param pos This argument is auto-populated, and includes the line number and class it was called from.
 	 */
 	public static inline function logError(input:Any, ?pos:PosInfos):Void {
 		if (input == null)
@@ -80,10 +80,10 @@ class Debug {
 	}
 
 	/**
-	 * Log an warning message to the game's console.
+	 * Logs a warning message to the game's console.
 	 * Plays a beep to the user and forces the console open if this is a debug build.
 	 * @param input The message to display.
-	 * @param pos This magic type is auto-populated, and includes the line number and class it was called from.
+	 * @param pos This argument is auto-populated, and includes the line number and class it was called from.
 	 */
 	public static inline function logWarn(input:Any, ?pos:PosInfos):Void {
 		if (input == null)
@@ -94,9 +94,9 @@ class Debug {
 	}
 
 	/**
-	 * Log a notice message to the game's console. Only visible in debug builds.
+	 * Logs a notice message to the game's console. Only visible in debug builds.
 	 * @param input The message to display.
-	 * @param pos This magic type is auto-populated, and includes the line number and class it was called from.
+	 * @param pos This argument is auto-populated, and includes the line number and class it was called from.
 	 */
 	public static inline function logNotice(input:Any, ?pos:PosInfos):Void {
 		if (input == null)
@@ -107,9 +107,9 @@ class Debug {
 	}
 
 	/**
-	 * Log an info message to the game's console. Only visible in debug builds.
+	 * Logs an info message to the game's console. Only visible in debug builds.
 	 * @param input The message to display.
-	 * @param pos This magic type is auto-populated, and includes the line number and class it was called from.
+	 * @param pos This argument is auto-populated, and includes the line number and class it was called from.
 	 */
 	public static inline function logInfo(input:Any, ?pos:PosInfos):Void {
 		if (input == null)
@@ -120,9 +120,9 @@ class Debug {
 	}
 
 	/**
-	 * Log a debug message to the game's console. Only visible in debug builds.
+	 * Logs a debug message to the game's console. Only visible in debug builds.
 	 * @param input The message to display.
-	 * @param pos This magic type is auto-populated, and includes the line number and class it was called from.
+	 * @param pos This argument is auto-populated, and includes the line number and class it was called from.
 	 */
 	public static inline function logDebug(input:Any, ?pos:PosInfos):Void {
 		if (input == null)
@@ -133,10 +133,10 @@ class Debug {
 	}
 
 	/**
-	 * Log a debug message to the game's console. Only visible in debug builds.
+	 * Logs a trace message to the game's console. Only visible in debug builds.
 	 * NOTE: We redirect all Haxe `trace()` calls to this function.
 	 * @param input The message to display.
-	 * @param pos This magic type is auto-populated, and includes the line number and class it was called from.
+	 * @param pos This argument is auto-populated, and includes the line number and class it was called from.
 	 */
 	public static inline function logTrace(input:Any, ?pos:PosInfos):Void {
 		if (input == null)
@@ -157,12 +157,12 @@ class Debug {
 	}
 
 	/**
-	 * Display the value of a particular field of a given object
-	 * in the Debug watch window, labelled with the specified name.
+	 * Displays the value of a particular field of a given object
+	 * in the debugger's watch window, labelled with the specified name.
 	 * Updates continuously.
 	 * @param object The object to watch.
 	 * @param field The string name of a field of the above object.
-	 * @param name
+	 * @param name The display name for the watch window.
 	 */
 	public static inline function watchVariable(object:Any, field:String, name:String):Void {
 		#if debug
@@ -176,8 +176,8 @@ class Debug {
 	}
 
 	/**
-	 * Adds the specified value to the Debug Watch window under the current name.
-	 * A lightweight alternative to watchVariable, since it doesn't update until you call it again.
+	 * Adds the specified value to the debugger's watch window under the current name.
+	 * A lightweight alternative to `watchVariable()`, since it doesn't update until you call it again.
 	 * 
 	 * @param name
 	 * @param value
@@ -187,7 +187,7 @@ class Debug {
 	}
 
 	/**
-	 * The Console window already supports most hScript, meaning you can do most things you could already do in Haxe.
+	 * The console window already supports most hScript, meaning you can do most things you could already do in Haxe.
 	 * However, you can also add custom commands using this function.
 	 */
 	public static inline function addConsoleCommand(name:String, callbackFn:Any):Void {
@@ -195,16 +195,16 @@ class Debug {
 	}
 
 	/**
-	 * Add an object with a custom alias so that it can be accessed via the console.
+	 * Adds an object with a custom alias so that it can be accessed via the console.
 	 */
 	public static inline function addObject(name:String, object:Any):Void {
 		FlxG.console.registerObject(name, object);
 	}
 
 	/**
-	 * Create a tracker window for an object.
+	 * Creates a tracker window for an object.
 	 * This will display the properties of that object in
-	 * a fancy little Debug window you can minimize and drag around.
+	 * a fancy little debug window you can minimize and drag around.
 	 * 
 	 * @param obj The object to display.
 	 */
@@ -218,7 +218,7 @@ class Debug {
 
 	/**
 	 * The game runs this function immediately when it starts.
-	 * Use onGameStart() if it can wait until a little later.
+	 * Use `onGameStart()` if it can wait until a little later.
 	 */
 	public static function onInitProgram():Void {
 		// Initialize logging tools.
@@ -286,8 +286,12 @@ class Debug {
 	 */
 	private static function defineTrackerProfiles():Void {
 		FlxG.debugger.addTrackerProfile(new TrackerProfile(PhysicsObject, null, [FlxSprite]));
-		FlxG.debugger.addTrackerProfile(new TrackerProfile(Entity, ["directionalAcceleration", "entityMovementSpeed", "isWalking", "noAcceleration"],
-			[PhysicsObject]));
+		FlxG.debugger.addTrackerProfile(new TrackerProfile(Entity, [
+			"directionalAcceleration",
+			"destinationPoint",
+			"entityMovementSpeed",
+			"useAcceleration"
+		], [PhysicsObject]));
 		FlxG.debugger.addTrackerProfile(new TrackerProfile(Enemy, ["target"], [Entity]));
 	}
 
@@ -304,6 +308,20 @@ class Debug {
 				Debug.logWarn("Invalid log level " + logLevel + "!");
 				Debug.logWarn("Expected one of: " + FlxStringUtil.formatArray(LOG_STYLE_NAMES));
 			}
+		});
+
+		var getPlayer = function():quench.objects.Player {
+			var state:quench.PlayState = cast FlxG.state;
+			return @:privateAccess state.player;
+		};
+
+		addConsoleCommand("kill", (logLevel:String) -> {
+			var player = getPlayer();
+			player.kill();
+		});
+		addConsoleCommand("revive", (logLevel:String) -> {
+			var player = getPlayer();
+			player.revive();
 		});
 	}
 
@@ -337,7 +355,7 @@ class DebugLogWriter {
 	private var logLevel:Int;
 
 	/**
-	 * Whether this DebugLogWriter has access to the file system.
+	 * Whether this `DebugLogWriter` has access to the file system.
 	 */
 	private var active:Bool = false;
 
@@ -393,7 +411,7 @@ class DebugLogWriter {
 	}
 
 	/**
-	 * Output text to the log file.
+	 * Writes text to the log file.
 	 */
 	public function write(input:Array<Any>, logStyle:LogStyle):Void {
 		var ts:String = Date.now().toString();

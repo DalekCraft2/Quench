@@ -14,5 +14,9 @@ class Revolver extends QuenchWeapon {
 		bulletDamage = 2;
 		fireShakeIntensity = 0.003;
 		fireShakeDuration = 0.1;
+
+		reloadTime = 1500;
+		maxAmmo = 6;
+		ammo = maxAmmo;
 	}
 }

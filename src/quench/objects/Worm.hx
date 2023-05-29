@@ -16,8 +16,7 @@ import flixel.util.FlxDestroyUtil;
 /*
 	TODO To make a worm, I first need to figure out how to apply "pulling" forces with Flixel so I can connect the body segments. Pushing forces are built in by default.
 	I need to make those pulling forces affect not just the children of the given WormSegment, but also the parents, too, so doing something like impacting the middle with enough force would cause the whole Worm to move.
-	I also need to make the forces become stronger the further the segments are from their child and parent. This will keep the Worm from spreading apart too much, allowing me to set "noAcceleration" to "false" without the whole body being flung everywhere.
-	I also need to make it so Worms can collide with other Worms and their segments without colliding with their own segments.
+	I also need to make the forces become stronger the further the segments are from their child and parent. This will keep the Worm from spreading apart too much, allowing me to set "useAcceleration" to "true" without the whole body being flung everywhere.
 
 	Note: I might be able to use Nape to create the "pulling" forces what I mentioned. I need to learn how it works first, though.
  */
@@ -29,11 +28,12 @@ class Worm extends WormSegment {
 	public function new(?x:Float = 0, ?y:Float = 0) {
 		super(x, y, FlxG.bitmap.create(40, 40, FlxColor.BLACK));
 
-		health = 10;
+		initializeHealth(10);
 		mass = 1;
 
-		// Use the pathfinding system to move
-		path = new FlxPath();
+		head = this;
+
+		usePathfinding = true;
 
 		children = new FlxTypedGroup();
 
@@ -54,10 +54,24 @@ class Worm extends WormSegment {
 				children.members[1].child = child;
 			}
 			child.target = child.parent;
+			child.head = this;
 		}
 		midpoint.put();
 	}
 
+	/*
+		override public function update(elapsed:Float):Void {
+			children.update(elapsed);
+
+			super.update(elapsed);
+		}
+
+		override public function draw():Void {
+			children.draw();
+
+			super.draw();
+		}
+	 */
 	override public function destroy():Void {
 		super.destroy();
 
@@ -66,15 +80,17 @@ class Worm extends WormSegment {
 }
 
 class WormSegment extends Enemy {
+	public var head:Worm;
 	public var parent(default, set):WormSegment;
 	public var child:WormSegment;
 
 	public function new(?x:Float = 0, ?y:Float = 0, ?simpleGraphic:FlxGraphicAsset) {
 		super(x, y, simpleGraphic == null ? FlxG.bitmap.create(30, 30, FlxColor.WHITE) : simpleGraphic);
 
-		health = 1;
+		initializeHealth(1);
 		mass = 0.5;
-		noAcceleration = true;
+		useAcceleration = false;
+		usePathfinding = false;
 	}
 
 	override public function destroy():Void {
@@ -82,6 +98,7 @@ class WormSegment extends Enemy {
 
 		parent = null; // I felt the need to set these to null instead of destroying them
 		child = null;
+		head = null;
 	}
 
 	override public function kill():Void {

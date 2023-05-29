@@ -8,6 +8,8 @@ import flixel.util.FlxDestroyUtil;
 class PhysicsObject extends FlxSprite {
 	public static final MOTION_FACTOR:Float = 100;
 
+	public var maxHealth:Float = 1;
+
 	private var deathTween:FlxTween;
 
 	private var useMaxVelocity:Bool = false;
@@ -19,7 +21,7 @@ class PhysicsObject extends FlxSprite {
 			maxVelocity.set(MOTION_FACTOR, MOTION_FACTOR);
 		}
 		drag.set(MOTION_FACTOR, MOTION_FACTOR);
-		elasticity = 0.5; // This is a value for how much acceleration is preserved after a collision (specifically with an immovable object); 0.5 means that half is preserved
+		elasticity = 0.5;
 		collisionXDrag = NEVER;
 		collisionYDrag = NEVER;
 	}
@@ -36,7 +38,6 @@ class PhysicsObject extends FlxSprite {
 	// HoloCure-inspired death animation.
 	override public function kill():Void {
 		alive = false;
-		// solid = false;
 
 		deathTween = FlxTween.tween(this, {alpha: 0, angle: angle + 45}, 0.25, {
 			onComplete: (tween:FlxTween) -> {
@@ -45,5 +46,24 @@ class PhysicsObject extends FlxSprite {
 				exists = false;
 			}
 		});
+	}
+
+	override public function revive():Void {
+		super.revive();
+
+		health = maxHealth;
+	}
+
+	override public function hurt(damage:Float):Void {
+		super.hurt(damage);
+
+		if (health > maxHealth) {
+			health = maxHealth;
+		}
+	}
+
+	private function initializeHealth(maxHealth:Float):Void {
+		this.maxHealth = maxHealth;
+		health = maxHealth;
 	}
 }

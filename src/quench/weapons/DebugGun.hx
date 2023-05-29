@@ -13,9 +13,11 @@ class DebugGun extends QuenchWeapon {
 
 		recoil = false;
 		bulletColor = FlxColor.RED;
-		bulletMass = 0.5;
-		bulletDamage = 1;
+		bulletMass = 5;
+		bulletDamage = 0;
 		fireShakeIntensity = 0.001;
 		fireShakeDuration = 0.1;
+
+		useAmmo = false;
 	}
 }

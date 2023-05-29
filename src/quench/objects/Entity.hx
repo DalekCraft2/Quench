@@ -1,24 +1,30 @@
 package quench.objects;
 
-import flixel.FlxG;
 import flixel.math.FlxPoint;
 import flixel.system.FlxAssets.FlxGraphicAsset;
+import flixel.tile.FlxBaseTilemap;
 import flixel.tile.FlxTilemap;
-import flixel.util.FlxArrayUtil;
 import flixel.util.FlxColor;
 import flixel.util.FlxDestroyUtil;
 import flixel.util.FlxDirectionFlags;
 import haxe.io.Path;
 
 class Entity extends PhysicsObject {
+	public var tilemap:FlxTilemap;
+
+	/**
+	 * Field of view of this entity, in degrees.
+	 */
 	public var fieldOfView:Float = 60;
 
 	private var directionalAcceleration:FlxPoint = FlxPoint.get();
 	private var destinationPoint:FlxPoint = FlxPoint.get();
 	private var entityMovementSpeed:Float = 1;
-	/* FIXME This might be a HaxeFlixel bug, but, when noAcceleration is true and I push Enemies like Opponent against the left wall, they can't move away from the wall.
+	/* FIXME This might be a HaxeFlixel bug, but, when useAcceleration is false and I push Enemies like Opponent against the left wall, they can't move away from the wall.
 		I feel like it might be related to collisionDrag, and that has a bug of only having effects on objects when the Player pushes them from the right or from the bottom. */
-	private var noAcceleration:Bool = false;
+	@:isVar
+	private var useAcceleration(get, set):Bool = true;
+	private var usePathfinding:Bool = false;
 
 	public function new(?x:Float = 0, ?y:Float = 0, ?simpleGraphic:FlxGraphicAsset) {
 		super(x, y, simpleGraphic);
@@ -33,79 +39,62 @@ class Entity extends PhysicsObject {
 		setFacingFlip(LEFT.with(UP), true, true);
 	}
 
+	override public function update(elapsed:Float):Void {
+		super.update(elapsed);
+
+		updateDestinationPoint();
+		updateDirectionalAcceleration();
+	}
+
 	override public function destroy():Void {
 		super.destroy();
 
+		tilemap = null; // Do not destroy
 		directionalAcceleration = FlxDestroyUtil.put(directionalAcceleration);
 		destinationPoint = FlxDestroyUtil.put(destinationPoint);
 	}
 
-	public function canSee(entity:Entity):Bool {
+	public function canSee(entity:Entity, useFov:Bool = true):Bool {
 		var midpoint:FlxPoint = getMidpoint();
 		var targetMidpoint:FlxPoint = entity.getMidpoint();
-		var angle:Float = midpoint.degreesTo(targetMidpoint);
-		var facingAngle:Float = facing.degrees;
-		if (angle >= facingAngle - fieldOfView / 2 && angle <= facingAngle + fieldOfView / 2) {
-			return true;
-		} else if (facing == LEFT) { // LEFT's angle is both 180 and -180
-			facingAngle = -180;
-			if (angle >= facingAngle - fieldOfView / 2 && angle <= facingAngle + fieldOfView / 2) {
+		if (tilemap != null && tilemap.ray(midpoint, targetMidpoint)) {
+			if (useFov) {
+				var angle:Float = midpoint.degreesTo(targetMidpoint);
+				midpoint.put();
+				targetMidpoint.put();
+				var facingAngle:Float = facing.degrees;
+				if (angle >= facingAngle - fieldOfView / 2 && angle <= facingAngle + fieldOfView / 2) {
+					return true;
+				} else if (facing == LEFT) { // LEFT's angle is both 180 and -180
+					facingAngle = -180;
+					if (angle >= facingAngle - fieldOfView / 2 && angle <= facingAngle + fieldOfView / 2) {
+						return true;
+					}
+				}
+			} else {
+				midpoint.put();
+				targetMidpoint.put();
 				return true;
 			}
 		}
-		midpoint.put();
-		targetMidpoint.put();
 		return false;
 	}
 
 	// TODO Make this not happen instantly and instead happen gradually for NPCs
 	public function lookAt(target:Entity):Void {
-		if (alive) {
-			var midpoint:FlxPoint = getMidpoint();
-			var targetMidpoint:FlxPoint = target.getMidpoint();
-
-			facing = NONE;
-			if (midpoint.distanceTo(targetMidpoint) != 0) {
-				var angle:Float = midpoint.degreesTo(targetMidpoint);
-
-				var facingValues:Array<FlxDirectionFlags> = [
-					RIGHT,
-					RIGHT.with(DOWN),
-					DOWN,
-					LEFT.with(DOWN),
-					LEFT,
-					LEFT.with(UP),
-					UP,
-					UP.with(RIGHT)
-				];
-
-				for (facingValue in facingValues) {
-					var facingAngle:Float = facingValue.degrees;
-					if (angle >= facingAngle - 45 / 2 && angle <= facingAngle + 45 / 2) {
-						facing = facingValue;
-						break;
-					} else if (facingValue == LEFT) { // LEFT's angle is both 180 and -180
-						facingAngle = -180;
-						if (angle >= facingAngle - 45 / 2 && angle <= facingAngle + 45 / 2) {
-							facing = facingValue;
-							break;
-						}
-					}
-				}
-			}
-
-			midpoint.put();
-			targetMidpoint.put();
-		}
+		var targetMidpoint:FlxPoint = target.getMidpoint();
+		lookAtPoint(targetMidpoint);
+		targetMidpoint.put();
 	}
 
 	public function lookAtPoint(targetPoint:FlxPoint):Void {
 		if (alive) {
 			var midpoint:FlxPoint = getMidpoint();
+
+			facing = NONE;
 			if (midpoint.distanceTo(targetPoint) != 0) {
 				var angle:Float = midpoint.degreesTo(targetPoint);
 
-				facing = NONE;
 				var facingValues:Array<FlxDirectionFlags> = [
 					RIGHT,
 					RIGHT.with(DOWN),
@@ -136,46 +125,50 @@ class Entity extends PhysicsObject {
 		}
 	}
 
+	private function updateDestinationPoint():Void {}
+
 	private function updateDirectionalAcceleration():Void {
-		if (noAcceleration) {
-			velocity.zero();
+		// if (path != null && path.nodes.length > 0 && !path.finished) {
+		// 	return;
+		// }
+		if (useAcceleration) {
+			acceleration.zero();
 		} else {
-			acceleration.subtractPoint(directionalAcceleration);
+			velocity.zero();
 		}
 		directionalAcceleration.zero();
+		if (path != null) {
+			path.cancel();
+		}
 		if (alive) {
-			if (!destinationPoint.equals(getMidpoint(FlxPoint.weak()))) {
-				var midpoint:FlxPoint = getMidpoint();
+			var midpoint:FlxPoint = getMidpoint();
+			if (!destinationPoint.equals(midpoint)) {
 				directionalAcceleration.set(1, 0);
 				directionalAcceleration.degrees = midpoint.degreesTo(destinationPoint);
 				// Make the acceleration constant regardless of direction
 				directionalAcceleration.length = entityMovementSpeed * PhysicsObject.MOTION_FACTOR;
-				if (noAcceleration) {
-					if (path == null) {
-						velocity.copyFrom(directionalAcceleration);
-					} else {
-						// TODO Make this code not awful
-						// TODO Figure out whether it is possible to use FlxPath with acceleration instead of velocity, for Enemies other than Worm and Tank (which both use pathfinding)
-						var state:PlayState = cast FlxG.state;
-						@:privateAccess var tilemap:FlxTilemap = state.tilemap;
-						var pathPoints:Array<FlxPoint> = tilemap.findPath(midpoint, destinationPoint, RAY_BOX(width, height));
-						path.start(pathPoints, entityMovementSpeed * PhysicsObject.MOTION_FACTOR);
-					}
+
+				if (usePathfinding && path != null && tilemap != null) {
+					// TODO Make this code not awful
+					@:privateAccess var pathfinder:BigMoverPathfinder = cast(FlxBaseTilemap.diagonalPathfinder, BigMoverPathfinder);
+					pathfinder.widthInTiles = Math.ceil(tilemap.tileWidth / width);
+					pathfinder.heightInTiles = Math.ceil(tilemap.tileHeight / height);
+					var pathPoints:Array<FlxPoint> = tilemap.findPath(midpoint, destinationPoint, RAY_BOX(width, height), NONE);
+					path.start(pathPoints, entityMovementSpeed * PhysicsObject.MOTION_FACTOR);
 				} else {
-					acceleration.addPoint(directionalAcceleration);
+					if (useAcceleration) {
+						acceleration.copyFrom(directionalAcceleration);
+					} else {
+						velocity.copyFrom(directionalAcceleration);
+					}
 				}
-				midpoint.put();
-			} else if (path != null && path.active) {
-				// Make the Entity stop moving
-				path.active = false;
-				// Make the Entity not instantly teleport to the end of the current path if path.start() is called again
-				FlxArrayUtil.clearArray(path.nodes);
 			}
+			midpoint.put();
 		}
 	}
 
-	private function loadEntityFrames(color:FlxColor = FlxColor.WHITE):Void {
-		loadGraphic(Path.join(["assets", "images", Path.withExtension("entity", "png")]), true, 40, 40);
+	private function loadEntityFrames(color:FlxColor = FlxColor.WHITE, spriteName:String = "entity", size:Int = 40):Void {
+		loadGraphic(Path.join(["assets/images/sprites", Path.withExtension(spriteName, "png")]), true, size, size);
 		this.color = color;
 	}
 
@@ -196,6 +189,15 @@ class Entity extends PhysicsObject {
 			}
 		}
 
+		return value;
+	}
+
+	private function get_useAcceleration():Bool {
+		return useAcceleration;
+	}
+
+	private function set_useAcceleration(value:Bool):Bool {
+		useAcceleration = value;
 		return value;
 	}
 }

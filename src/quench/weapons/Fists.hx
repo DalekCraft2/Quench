@@ -4,6 +4,7 @@ import flixel.FlxSprite;
 import flixel.math.FlxPoint;
 import flixel.util.helpers.FlxBounds;
 
+// TODO Improve melee weapons; make the "bullets" move with the player, rather than acting like actual bullets
 class Fists extends QuenchWeapon {
 	public function new(parent:FlxSprite) {
 		var bulletSize:Int = 25;
@@ -19,6 +20,8 @@ class Fists extends QuenchWeapon {
 		bulletColor = parent.color;
 		bulletMass = 0.05;
 		bulletDamage = 0.5;
+
+		useAmmo = false;
 
 		var originalCallback:() -> Void = onPostFireCallback;
 		setPostFireCallback(() -> {

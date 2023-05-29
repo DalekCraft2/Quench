@@ -17,5 +17,9 @@ class TankGun extends QuenchWeapon {
 		fireShakeDuration = 0.2;
 		hitShakeIntensity = 0.02;
 		hitShakeDuration = 0.5;
+
+		reloadTime = 4000;
+		maxAmmo = 1;
+		ammo = maxAmmo;
 	}
 }

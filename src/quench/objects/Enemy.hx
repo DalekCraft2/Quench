@@ -1,20 +1,16 @@
 package quench.objects;
 
-import flixel.math.FlxPoint;
+import flixel.system.FlxAssets.FlxGraphicAsset;
 
 // TODO Add idle behavior for when there is no target
 class Enemy extends Entity {
 	public var target:Entity;
 
-	override public function update(elapsed:Float):Void {
-		super.update(elapsed);
+	public function new(?x:Float = 0, ?y:Float = 0, ?simpleGraphic:FlxGraphicAsset) {
+		super(x, y, simpleGraphic);
 
-		if (target != null && target.alive) {
-			lookAt(target);
-			destinationPoint.copyFrom(target.getMidpoint(FlxPoint.weak()));
-		}
-
-		updateDirectionalAcceleration();
+		path = new AccelerationPath();
+		usePathfinding = true;
 	}
 
 	override public function destroy():Void {
@@ -23,13 +19,23 @@ class Enemy extends Entity {
 		target = null;
 	}
 
-	override private function updateDirectionalAcceleration():Void {
-		if (target == null || !target.alive) {
+	override private function updateDestinationPoint():Void {
+		super.updateDestinationPoint();
+
+		if (target == null || !target.alive /*|| !canSee(target, false)*/) {
 			getMidpoint(destinationPoint);
 		} else {
+			// lookAt(target);
 			target.getMidpoint(destinationPoint);
 		}
+		lookAtPoint(destinationPoint);
+	}
 
-		super.updateDirectionalAcceleration();
+	override private function set_useAcceleration(value:Bool):Bool {
+		super.set_useAcceleration(value);
+		if (path != null && path is AccelerationPath) {
+			cast(path, AccelerationPath).useAcceleration = value;
+		}
+		return value;
 	}
 }
