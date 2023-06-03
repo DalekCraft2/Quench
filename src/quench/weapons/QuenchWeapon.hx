@@ -3,20 +3,17 @@ package quench.weapons;
 import flixel.FlxG;
 import flixel.FlxObject;
 import flixel.FlxSprite;
-import flixel.addons.weapon.FlxBullet;
-import flixel.addons.weapon.FlxWeapon;
 import flixel.math.FlxPoint;
+import flixel.math.FlxRect;
+import flixel.sound.FlxSound;
 import flixel.tile.FlxTilemap;
 import flixel.util.FlxColor;
-import flixel.util.FlxDestroyUtil.IFlxDestroyable;
-import flixel.util.FlxDestroyUtil;
-import flixel.util.FlxTimer;
-import flixel.util.helpers.FlxBounds;
+import quench.weapons.FlxWeapon;
 
 // TODO Add Davy Crockett.
 // TODO Make sprites for the weapons and have them show up aiming at where the AI/Player is aiming
 // TODO Use FlxEmitter to make impact particles for bullets what explode
-class QuenchWeapon extends FlxTypedWeapon<FlxBullet> implements IFlxDestroyable {
+class QuenchWeapon extends FlxTypedWeapon<FlxBullet> {
 	public var recoil:Bool = true;
 	public var fireShakeIntensity:Float;
 	public var fireShakeDuration:Float;
@@ -30,7 +27,8 @@ class QuenchWeapon extends FlxTypedWeapon<FlxBullet> implements IFlxDestroyable 
 	public var maxAmmo:Int;
 	public var reloading:Bool;
 	public var reloadTime:Float;
-	public var fireTimer:FlxTimer;
+	public var hitSound:FlxSound;
+	public var weaponSprite:FlxSprite;
 
 	public function new(name:String, parent:FlxSprite, speedMode:FlxWeaponSpeedMode, bulletSize:Int) {
 		super(name, (weapon:FlxWeapon) -> {
@@ -39,7 +37,7 @@ class QuenchWeapon extends FlxTypedWeapon<FlxBullet> implements IFlxDestroyable 
 			bullet.mass = bulletMass;
 			return bullet;
 		},
-			PARENT(parent, new FlxBounds(FlxPoint.get(parent.width / 2 - bulletSize / 2, parent.height / 2 - bulletSize / 2))), speedMode);
+			PARENT(parent, FlxRect.get(parent.width / 2 - bulletSize / 2, parent.height / 2 - bulletSize / 2)), speedMode);
 
 		setPostFireCallback(() -> {
 			doRecoil();
@@ -54,121 +52,26 @@ class QuenchWeapon extends FlxTypedWeapon<FlxBullet> implements IFlxDestroyable 
 					reload();
 				}
 			}
-		});
 
-		// fireTimer.onComplete = (tmr:FlxTimer) -> {
-		// 	if (reloading) {
-		// 		reloading = false;
-		// 	}
-		// };
-		fireTimer = new FlxTimer().start(fireRate, (tmr:FlxTimer) -> {
-			if (reloading) {
-				reloading = false;
+			if (onPostFireSound != null) {
+				onPostFireSound.proximity(parent.x, parent.y, FlxG.camera.target, 1000);
 			}
-		});
-		fireTimer.cancel();
+		} // , FlxG.sound.load("assets/audios/sounds/shoot.ogg")
+		);
 	}
 
-	override private function runFire(mode:FlxWeaponFireMode):Bool {
-		if (fireRate > 0 && !fireTimer.finished) {
-			return false;
+	override public function update(elapsed:Float):Void {
+		super.update(elapsed);
+
+		if (nextFire <= 0 && reloading) {
+			reloading = false;
 		}
+	}
 
-		if (onPreFireCallback != null) {
-			onPreFireCallback();
-		}
+	override public function destroy():Void {
+		super.destroy();
 
-		#if FLX_SOUND_SYSTEM
-		if (onPreFireSound != null) {
-			onPreFireSound.play();
-		}
-		#end
-
-		fireTimer.reset(fireRate / 1000);
-
-		// Get a free bullet from the pool
-		currentBullet = group.recycle(null, bulletFactory.bind(this));
-		if (currentBullet == null) {
-			return false;
-		}
-
-		// Clear any velocity that may have been previously set from the pool
-		currentBullet.velocity.zero(); // TODO is this really necessary?
-
-		switch (fireFrom) {
-			case PARENT(parent, offset, useParentAngle, angleOffset):
-				// store new offset in a new variable
-				var actualOffset = FlxPoint.get(FlxG.random.float(offset.min.x, offset.max.x), FlxG.random.float(offset.min.y, offset.max.y));
-				if (useParentAngle) {
-					// rotate actual offset around parent origin using the parent angle
-					// rotatePoints(actualOffset, parent.origin, parent.angle, actualOffset);
-					var newActualOffset:FlxPoint = rotatePoints(actualOffset, parent.origin, parent.angle);
-					actualOffset.put();
-					actualOffset = newActualOffset;
-
-					// reposition offset to have its origin at the new returned point
-					actualOffset.subtract(currentBullet.width / 2, currentBullet.height / 2);
-					actualOffset.subtract(parent.offset.x, parent.offset.y);
-				}
-
-				currentBullet.last.x = currentBullet.x = parent.x + actualOffset.x;
-				currentBullet.last.y = currentBullet.y = parent.y + actualOffset.y;
-
-				actualOffset.put();
-
-			case POSITION(position):
-				currentBullet.last.x = currentBullet.x = FlxG.random.float(position.min.x, position.max.x);
-				currentBullet.last.y = currentBullet.y = FlxG.random.float(position.min.y, position.max.y);
-		}
-
-		currentBullet.exists = true;
-		@:privateAccess currentBullet.bounds = bounds;
-		currentBullet.elasticity = bulletElasticity;
-		currentBullet.lifespan = FlxG.random.float(bulletLifeSpan.min, bulletLifeSpan.max);
-
-		switch (mode) {
-			case FIRE_AT_POSITION(x, y):
-				internalFireAtPoint(currentBullet, FlxPoint.weak(x, y));
-
-			case FIRE_AT_TARGET(target):
-				internalFireAtPoint(currentBullet, target.getPosition(FlxPoint.weak()));
-
-			case FIRE_FROM_ANGLE(angle):
-				internalFireFromAngle(currentBullet, FlxG.random.float(angle.min, angle.max));
-
-			case FIRE_FROM_PARENT_ANGLE(angle):
-				internalFireFromAngle(currentBullet, parent.angle + FlxG.random.float(angle.min, angle.max));
-
-			case FIRE_FROM_PARENT_FACING(angle):
-				internalFireFromAngle(currentBullet, parent.facing.degrees + FlxG.random.float(angle.min, angle.max));
-
-			#if FLX_TOUCH
-			case FIRE_AT_TOUCH(touch):
-				internalFireAtPoint(currentBullet, touch.getPosition(FlxPoint.weak()));
-			#end
-
-			#if FLX_MOUSE
-			case FIRE_AT_MOUSE:
-				internalFireAtPoint(currentBullet, FlxG.mouse.getPosition(FlxPoint.weak()));
-			#end
-		}
-
-		if (currentBullet.animation.getByName("fire") != null) {
-			currentBullet.animation.play("fire");
-		}
-
-		// Post fire stuff
-		if (onPostFireCallback != null) {
-			onPostFireCallback();
-		}
-
-		#if FLX_SOUND_SYSTEM
-		if (onPostFireSound != null) {
-			onPostFireSound.play();
-		}
-		#end
-
-		return true;
+		hitSound = null;
 	}
 
 	override private function shouldBulletHit(object:FlxObject, bullet:FlxObject):Bool {
@@ -190,12 +93,17 @@ class QuenchWeapon extends FlxTypedWeapon<FlxBullet> implements IFlxDestroyable 
 			// TODO Do something with the dead unused entities in PlayState so they don't take up memory and space in the groups
 			object.hurt(bulletDamage);
 		}
+
+		if (hitSound != null) {
+			hitSound.proximity(currentBullet.x, currentBullet.y, FlxG.camera.target, 1000);
+			hitSound.play();
+		}
 	}
 
 	public function reload():Void {
 		if (useAmmo) {
 			ammo = maxAmmo;
-			fireTimer.reset(reloadTime / 1000);
+			nextFire = reloadTime;
 			reloading = true;
 		}
 	}
@@ -208,62 +116,5 @@ class QuenchWeapon extends FlxTypedWeapon<FlxBullet> implements IFlxDestroyable 
 			parent.velocity.subtractPoint(recoilVector); // Recoil.
 			recoilVector.put();
 		}
-	}
-
-	public function destroy():Void {
-		name = null;
-		group = FlxDestroyUtil.destroy(group);
-		bounds = FlxDestroyUtil.put(bounds);
-		parent = null; // Don't destroy the parent
-		positionOffset = FlxDestroyUtil.put(positionOffset);
-		// if (positionOffsetBounds != null) {
-		// 	positionOffsetBounds.min = FlxDestroyUtil.put(positionOffsetBounds.min);
-		// 	positionOffsetBounds.max = FlxDestroyUtil.put(positionOffsetBounds.max);
-		// 	positionOffsetBounds = null;
-		// }
-		if (firePosition != null) {
-			firePosition.min = FlxDestroyUtil.put(firePosition.min);
-			firePosition.max = FlxDestroyUtil.put(firePosition.max);
-			firePosition = null;
-		}
-		if (fireFrom != null) {
-			switch (fireFrom) {
-				case PARENT(parent, offset, useParentAngle, angleOffset):
-					parent = null;
-					if (offset != null) {
-						offset.min = FlxDestroyUtil.put(offset.min);
-						offset.max = FlxDestroyUtil.put(offset.max);
-						offset = null;
-					}
-					angleOffset = null;
-				case POSITION(position):
-					if (position != null) {
-						position.min = FlxDestroyUtil.put(position.min);
-						position.max = FlxDestroyUtil.put(position.max);
-						position = null;
-					}
-			}
-			// fireFrom = null; // Can't do this because sending null to set_fireFrom() causes an NPE
-			@:bypassAccessor fireFrom = null;
-		}
-		if (speedMode != null) {
-			switch (speedMode) {
-				case SPEED(speed):
-					speed = null;
-				case ACCELERATION(acceleration, maxSpeed):
-					acceleration = null;
-					maxSpeed = null;
-			}
-			speedMode = null;
-		}
-		bulletLifeSpan = null;
-		currentBullet = FlxDestroyUtil.destroy(currentBullet);
-		onPreFireCallback = null;
-		onPostFireCallback = null;
-		onPreFireSound = null;
-		onPostFireSound = null;
-		bulletFactory = null;
-
-		fireTimer = FlxDestroyUtil.destroy(fireTimer);
 	}
 }

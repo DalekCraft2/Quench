@@ -93,7 +93,7 @@ class PlayState extends FlxState {
 		physicsObjects.add(player);
 
 		for (weapon in player.weapons) {
-			physicsObjects.add(weapon.group);
+			physicsObjects.add(weapon);
 			weapons.push(weapon);
 		}
 
@@ -194,7 +194,7 @@ class PlayState extends FlxState {
 			newObj.tilemap = tilemap;
 			removables.add(newObj);
 			weapons.push(newObj.weapon);
-			removables.add(newObj.weapon.group);
+			removables.add(newObj.weapon);
 		}
 		if (FlxG.keys.justPressed.NINE || (FlxG.keys.pressed.NINE && FlxG.keys.pressed.SHIFT)) {
 			var newObj:Tank = new Tank(player.x, player.y);
@@ -202,7 +202,7 @@ class PlayState extends FlxState {
 			newObj.tilemap = tilemap;
 			removables.add(newObj);
 			weapons.push(newObj.weapon);
-			removables.add(newObj.weapon.group);
+			removables.add(newObj.weapon);
 		}
 		// I think I should save the ZERO key for something *really* big...
 
@@ -308,8 +308,8 @@ class PlayState extends FlxState {
 				}
 			}
 
-			if (!weapon.fireTimer.finished) {
-				weaponText.text += " (" + FlxMath.roundDecimal(weapon.fireTimer.timeLeft, 3) + " s)";
+			if (weapon.nextFire > 0) {
+				weaponText.text += " (" + FlxMath.roundDecimal(weapon.nextFire, 3) + " s)";
 			}
 			weaponText.text += "\n";
 		}

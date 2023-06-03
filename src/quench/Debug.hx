@@ -60,7 +60,7 @@ class Debug {
 	public static inline function logFatal(input:Any, ?pos:PosInfos):Void {
 		if (input == null)
 			return;
-		var output:Array<Any> = formatOutput(input, pos);
+		var output:String = formatOutput(input, pos);
 		writeToFlxGLog(output, LOG_STYLE_FATAL);
 		writeToLogFile(output, LOG_STYLE_FATAL);
 	}
@@ -74,7 +74,7 @@ class Debug {
 	public static inline function logError(input:Any, ?pos:PosInfos):Void {
 		if (input == null)
 			return;
-		var output:Array<Any> = formatOutput(input, pos);
+		var output:String = formatOutput(input, pos);
 		writeToFlxGLog(output, LOG_STYLE_ERROR);
 		writeToLogFile(output, LOG_STYLE_ERROR);
 	}
@@ -88,7 +88,7 @@ class Debug {
 	public static inline function logWarn(input:Any, ?pos:PosInfos):Void {
 		if (input == null)
 			return;
-		var output:Array<Any> = formatOutput(input, pos);
+		var output:String = formatOutput(input, pos);
 		writeToFlxGLog(output, LOG_STYLE_WARNING);
 		writeToLogFile(output, LOG_STYLE_WARNING);
 	}
@@ -101,7 +101,7 @@ class Debug {
 	public static inline function logNotice(input:Any, ?pos:PosInfos):Void {
 		if (input == null)
 			return;
-		var output:Array<Any> = formatOutput(input, pos);
+		var output:String = formatOutput(input, pos);
 		writeToFlxGLog(output, LOG_STYLE_NOTICE);
 		writeToLogFile(output, LOG_STYLE_NOTICE);
 	}
@@ -114,7 +114,7 @@ class Debug {
 	public static inline function logInfo(input:Any, ?pos:PosInfos):Void {
 		if (input == null)
 			return;
-		var output:Array<Any> = formatOutput(input, pos);
+		var output:String = formatOutput(input, pos);
 		writeToFlxGLog(output, LOG_STYLE_INFO);
 		writeToLogFile(output, LOG_STYLE_INFO);
 	}
@@ -127,7 +127,7 @@ class Debug {
 	public static inline function logDebug(input:Any, ?pos:PosInfos):Void {
 		if (input == null)
 			return;
-		var output:Array<Any> = formatOutput(input, pos);
+		var output:String = formatOutput(input, pos);
 		writeToFlxGLog(output, LOG_STYLE_DEBUG);
 		writeToLogFile(output, LOG_STYLE_DEBUG);
 	}
@@ -141,7 +141,7 @@ class Debug {
 	public static inline function logTrace(input:Any, ?pos:PosInfos):Void {
 		if (input == null)
 			return;
-		var output:Array<Any> = formatOutput(input, pos);
+		var output:String = formatOutput(input, pos);
 		writeToFlxGLog(output, LOG_STYLE_TRACE);
 		writeToLogFile(output, LOG_STYLE_TRACE);
 	}
@@ -269,13 +269,13 @@ class Debug {
 		defineConsoleCommands();
 	}
 
-	private static function writeToFlxGLog(data:Array<Any>, logStyle:LogStyle):Void {
+	private static function writeToFlxGLog(data:String, logStyle:LogStyle):Void {
 		if (FlxG != null && FlxG.game != null && FlxG.log != null) {
 			FlxG.log.advanced(data, logStyle);
 		}
 	}
 
-	private static function writeToLogFile(data:Array<Any>, logStyle:LogStyle):Void {
+	private static function writeToLogFile(data:String, logStyle:LogStyle):Void {
 		if (logFileWriter != null && logFileWriter.isActive()) {
 			logFileWriter.write(data, logStyle);
 		}
@@ -325,25 +325,12 @@ class Debug {
 		});
 	}
 
-	private static function formatOutput(input:Any, pos:PosInfos):Array<Any> {
-		// This code is junk but I kept getting Null Function References.
-		// TODO Make this code not "junk".
-		var inArray:Array<Any>;
-		if (input == null) {
-			inArray = ["<NULL>"];
-		} else if (input is Array) {
-			inArray = input;
-		} else {
-			inArray = [input];
-		}
-
+	private static function formatOutput(input:Any, pos:PosInfos):String {
 		if (pos == null)
-			return inArray;
+			return input;
 
 		// Format the position ourselves.
-		var output:Array<Any> = ["(" + pos.className + "/" + pos.methodName + "#" + pos.lineNumber + "): "];
-
-		return output.concat(inArray);
+		return "(" + pos.className + "/" + pos.methodName + "#" + pos.lineNumber + "): " + input;
 	}
 }
 
@@ -413,10 +400,9 @@ class DebugLogWriter {
 	/**
 	 * Writes text to the log file.
 	 */
-	public function write(input:Array<Any>, logStyle:LogStyle):Void {
+	public function write(input:Any, logStyle:LogStyle):Void {
 		var ts:String = Date.now().toString();
-		// TODO Why do we bother using an array if we combine it into a single string anyway?
-		var msg:String = ts + " " + logStyle.prefix + input.join("");
+		var msg:String = ts + " " + logStyle.prefix + input;
 
 		// Output text to the debug console directly.
 		if (shouldLog(logStyle)) {

@@ -1,22 +1,20 @@
-package flixel.addons.weapon;
+package quench.weapons;
 
 import flixel.FlxBasic;
 import flixel.FlxG;
 import flixel.FlxObject;
 import flixel.FlxSprite;
-import flixel.group.FlxGroup.FlxTypedGroup;
+import flixel.group.FlxGroup;
 import flixel.math.FlxAngle;
 import flixel.math.FlxPoint;
 import flixel.math.FlxRect;
 import flixel.math.FlxVelocity;
+import flixel.sound.FlxSound;
 import flixel.tile.FlxTilemap;
 import flixel.util.FlxDestroyUtil;
-import flixel.util.FlxTimer;
 import flixel.util.helpers.FlxBounds;
-#if (flixel >= "5.3.0")
-import flixel.sound.FlxSound;
-#else
-import flixel.system.FlxSound;
+#if FLX_TOUCH
+import flixel.input.touch.FlxTouch;
 #end
 
 /**
@@ -29,16 +27,18 @@ import flixel.system.FlxSound;
  * @author Richard Davey / Photon Storm
  * @author Touch added by Impaler / Beeblerox
  *
+ * TODO: Angled bullets
  * TODO: Multishot
  * TODO: Baked Rotation support for angled bullets
  * TODO: Bullet death styles (particle effects)
  * TODO: Bullet trails - blur FX style and Missile Command "draw lines" style? (could be another FX plugin)
  * TODO: Homing Missiles
  * TODO: Bullet uses random sprite from sprite sheet (for rainbow style bullets), or cycles through them in sequence?
+ * TODO: Some Weapon base classes like shotgun, laser, etc?
  */
 typedef FlxWeapon = FlxTypedWeapon<FlxBullet>;
 
-class FlxTypedWeapon<TBullet:FlxBullet> implements IFlxDestroyable {
+class FlxTypedWeapon<TBullet:FlxBullet> extends FlxGroup {
 	// Quick firing direction angle constants
 	public static inline var BULLET_UP:Int = -90;
 	public static inline var BULLET_DOWN:Int = 90;
@@ -55,19 +55,21 @@ class FlxTypedWeapon<TBullet:FlxBullet> implements IFlxDestroyable {
 	public var name:String;
 
 	/**
-	 * The `FlxGroup` from which all the bullets for this weapon are drawn. This should be added to your display and collision-checked against it.
+	 * The `FlxGroup` from which all the bullets for this weapon are drawn.
 	 */
+	// The reason why I have an FlxGroup inside an FlxGroup is because I want to add sprites for displaying the weapons themselves, so this will separate the bullets from the weapon's sprite.
 	public var group(default, null):FlxTypedGroup<TBullet>;
 
 	/**
-	 * The delay in milliseconds (ms) between which each bullet is fired. Default is `0`, which means there is no delay.
+	 * The remaining time in seconds before the weapon will be able to fire. Only used if `fireRate > 0`.
+	 * Internal variable; use with caution.
 	 */
-	public var fireRate:Int = 0;
+	public var nextFire:Float = 0;
 
 	/**
-	 * A timer used whenever the weapon is fired, with its duration set to `fireRate`.
+	 * The delay in seconds between which each bullet is fired. Default is `0`, which means there is no delay.
 	 */
-	public var fireTimer:FlxTimer;
+	public var fireRate:Float = 0;
 
 	/**
 	 * When a bullet goes outside of these bounds, it will be automatically killed, freeing it up for firing again.
@@ -79,6 +81,18 @@ class FlxTypedWeapon<TBullet:FlxBullet> implements IFlxDestroyable {
 	 * The parent sprite of this weapon. Only accessible when `fireFrom == PARENT`.
 	 */
 	public var parent(default, null):FlxSprite;
+
+	/**
+	 * A fixed range of positions from which to fire the weapon, like in the game Missile Command. Only accessible when `fireFrom == POSITION`.
+	 */
+	public var firePosition(default, null):FlxRect;
+
+	/**
+	 * A value used to offset a bullet's position when it is fired. Can be used to, for example,
+	 * line a bullet up with the "nose" of a space ship. Only accessible when `fireFrom == PARENT`.
+	 * @since 3.2.0
+	 */
+	public var positionOffsetBounds(default, null):FlxRect;
 
 	public var fireFrom(default, set):FlxWeaponFireFrom;
 	public var speedMode:FlxWeaponSpeedMode;
@@ -105,12 +119,24 @@ class FlxTypedWeapon<TBullet:FlxBullet> implements IFlxDestroyable {
 	 */
 	public var currentBullet:TBullet;
 
-	// Callbacks
+	/**
+	 * A function that is called immediately before a bullet is fired.
+	 */
 	public var onPreFireCallback:Void->Void;
+
+	/**
+	 * A function that is called immediately after a bullet is fired.
+	 */
 	public var onPostFireCallback:Void->Void;
 
-	// Sounds
+	/**
+	 * A sound that is played immediately before a bullet is fired.
+	 */
 	public var onPreFireSound:FlxSound;
+
+	/**
+	 * A sound that is played immediately after a bullet is fired.
+	 */
 	public var onPostFireSound:FlxSound;
 
 	/**
@@ -121,7 +147,7 @@ class FlxTypedWeapon<TBullet:FlxBullet> implements IFlxDestroyable {
 	var skipParentCollision:Bool;
 
 	/**
-	 * A value to use to offset a bullet's angle from the `parent`'s angle when it is fired. Used only if `fireFrom == PARENT` and `fireFrom.useParentAngle == true`.
+	 * A value used to offset a bullet's initial angle when it is fired.
 	 */
 	var angleOffset:Float = 0;
 
@@ -129,17 +155,19 @@ class FlxTypedWeapon<TBullet:FlxBullet> implements IFlxDestroyable {
 	 * Creates an `FlxWeapon` instance which can fire bullets.
 	 * Use one of the `fireFrom...()` or `fireAt...()` functions to fire bullets.
 	 *
-	 * @param name The name of the weapon (e.g., `"laser"`, `"shotgun"`). For your internal reference really, but could be displayed in-game too.
-	 * @param bulletFactory The factory function used to create new bullets.
-	 * @param fireFrom The weapon's firing position (i.e., `PARENT`, `POSITION`).
-	 * @param speedMode The speed mode for the bullets (i.e., `SPEED`, `ACCELERATION`).
+	 * @param   name           The name of the weapon (e.g., `"laser"`, `"shotgun"`)
+	 *                         For your internal reference really, but could be displayed in-game too.
+	 * @param   bulletFactory  The factory function used to create new bullets.
+	 * @param   fireFrom       The weapon's firing position (i.e., `PARENT`, `POSITION`).
+	 * @param   speedMode      The speed mode for the bullets (i.e., `SPEED`, `ACCELERATION`).
 	 */
 	public function new(name:String, bulletFactory:FlxTypedWeapon<TBullet>->TBullet, fireFrom:FlxWeaponFireFrom, speedMode:FlxWeaponSpeedMode) {
+		super();
+
 		group = new FlxTypedGroup();
+		add(group);
 		bounds = FlxRect.get(0, 0, FlxG.width, FlxG.height);
 		bulletLifeSpan = new FlxBounds(0.0, 0);
-		fireTimer = new FlxTimer().start(); // start() needs to be called for it to be properly initialized
-		fireTimer.cancel();
 
 		this.name = name;
 		this.bulletFactory = bulletFactory;
@@ -147,14 +175,21 @@ class FlxTypedWeapon<TBullet:FlxBullet> implements IFlxDestroyable {
 		this.speedMode = speedMode;
 	}
 
+	override public function update(elapsed:Float):Void {
+		super.update(elapsed);
+
+		nextFire -= elapsed;
+	}
+
 	/**
 	 * Internal function that handles the actual firing of the bullets.
 	 *
-	 * @param mode The mode to use for firing the bullet.
-	 * @return `true` if a bullet was fired, or `false` if one wasn't available. A reference to the last fired bullet is stored in `currentBullet`.
+	 * @param   mode  The mode to use for firing the bullet.
+	 * @return  `true` if a bullet was fired, or `false` if one wasn't available.
+	 * A reference to the last fired bullet is stored in `currentBullet`.
 	 */
 	function runFire(mode:FlxWeaponFireMode):Bool {
-		if (fireRate > 0 && !fireTimer.finished) {
+		if (fireRate > 0 && nextFire > 0) {
 			return false;
 		}
 
@@ -168,7 +203,7 @@ class FlxTypedWeapon<TBullet:FlxBullet> implements IFlxDestroyable {
 		}
 		#end
 
-		fireTimer.reset(fireRate / 1000);
+		nextFire = fireRate;
 
 		// Get a free bullet from the pool
 		currentBullet = group.recycle(null, bulletFactory.bind(this));
@@ -182,7 +217,7 @@ class FlxTypedWeapon<TBullet:FlxBullet> implements IFlxDestroyable {
 		switch (fireFrom) {
 			case PARENT(parent, offset, useParentAngle, angleOffset):
 				// store new offset in a new variable
-				var actualOffset = FlxPoint.get(FlxG.random.float(offset.min.x, offset.max.x), FlxG.random.float(offset.min.y, offset.max.y));
+				var actualOffset = FlxPoint.get(FlxG.random.float(offset.left, offset.right), FlxG.random.float(offset.top, offset.bottom));
 				if (useParentAngle) {
 					// rotate actual offset around parent origin using the parent angle
 					rotatePoints(actualOffset, parent.origin, parent.angle, actualOffset);
@@ -198,8 +233,8 @@ class FlxTypedWeapon<TBullet:FlxBullet> implements IFlxDestroyable {
 				actualOffset.put();
 
 			case POSITION(position):
-				currentBullet.last.x = currentBullet.x = FlxG.random.float(position.min.x, position.max.x);
-				currentBullet.last.y = currentBullet.y = FlxG.random.float(position.min.y, position.max.y);
+				currentBullet.last.x = currentBullet.x = FlxG.random.float(position.left, position.right);
+				currentBullet.last.y = currentBullet.y = FlxG.random.float(position.top, position.bottom);
 		}
 
 		currentBullet.exists = true;
@@ -255,30 +290,29 @@ class FlxTypedWeapon<TBullet:FlxBullet> implements IFlxDestroyable {
 	/**
 	 * Calculates the new position for a point rotated around another point.
 	 *
-	 * @param point The point to be rotated.
-	 * @param origin The point around which to be rotated. Usually the origin of the `parent`.
-	 * @param angle The current angle from of the origin, in degrees. Usually the `parent`'s angle.
-	 * @param returnedPoint An optional point to reuse instead of getting another from the pool.
-	 * @return The new rotated point.
+	 * @param   point    The point to be rotated.
+	 * @param   origin   The point around which to be rotated. Usually the origin of the `parent`.
+	 * @param   degrees  The angle by which to rotate `point` around `origin`. Usually the `parent`'s angle.
+	 * @param   result   An optional point to reuse instead of getting another from the pool.
+	 * @return  The new rotated point.
 	 */
-	public function rotatePoints(point:FlxPoint, origin:FlxPoint, angle:Float, ?returnedPoint:FlxPoint):FlxPoint {
-		if (returnedPoint == null) {
-			returnedPoint = FlxPoint.weak();
-		}
+	public function rotatePoints(point:FlxPoint, origin:FlxPoint, degrees:Float, ?result:FlxPoint):FlxPoint {
+		if (result == null)
+			result = FlxPoint.get();
 
-		var inBetweenAngle:Float = origin.degreesTo(point);
-		inBetweenAngle = angle + inBetweenAngle;
-		var inBetweenDistance:Float = origin.distanceTo(point);
+		final distanceTo = origin.distanceTo(point);
+		final degreesTo = degrees + origin.distanceTo(point);
 
-		returnedPoint.x = Math.cos(inBetweenAngle * Math.PI / 180) * inBetweenDistance;
-		returnedPoint.y = Math.sin(inBetweenAngle * Math.PI / 180) * inBetweenDistance;
-		return returnedPoint.add(origin.x, origin.y);
+		result.setPolarDegrees(distanceTo, degreesTo);
+		result.addPoint(origin);
+		return result;
 	}
 
 	/**
 	 * Fires a bullet (if one is available) based on the `facing` variable of the weapon's `parent`.
 	 *
-	 * @return `true` if a bullet was fired, or `false` if one wasn't available. A reference to the last fired bullet is stored in `currentBullet`.
+	 * @return  `true` if a bullet was fired, or `false` if one wasn't available.
+	 * A reference to the last fired bullet is stored in `currentBullet`.
 	 */
 	public inline function fireFromParentFacing(angleNoise:FlxBounds<Float>):Bool {
 		return runFire(FIRE_FROM_PARENT_FACING(angleNoise));
@@ -286,9 +320,11 @@ class FlxTypedWeapon<TBullet:FlxBullet> implements IFlxDestroyable {
 
 	#if FLX_MOUSE
 	/**
-	 * Fires a bullet (if one is available) at the mouse coordinates, using the speed set in `speedMode` and the rate set in `fireRate`.
+	 * Fires a bullet (if one is available) at the mouse coordinates,
+	 * using the speed set in `speedMode` and the rate set in `fireRate`.
 	 *
-	 * @return `true` if a bullet was fired, or `false` if one wasn't available. A reference to the last fired bullet is stored in `currentBullet`.
+	 * @return  `true` if a bullet was fired, or `false` if one wasn't available.
+	 * A reference to the last fired bullet is stored in `currentBullet`.
 	 */
 	public inline function fireAtMouse():Bool {
 		return runFire(FIRE_AT_MOUSE);
@@ -297,10 +333,12 @@ class FlxTypedWeapon<TBullet:FlxBullet> implements IFlxDestroyable {
 
 	#if FLX_TOUCH
 	/**
-	 * Fires a bullet (if one is available) at the `FlxTouch` coordinates, using the speed set in `speedMode` and the rate set in `fireRate`.
+	 * Fires a bullet (if one is available) at the `FlxTouch` coordinates,
+	 * using the speed set in `speedMode` and the rate set in `fireRate`.
 	 *
-	 * @param touch The `FlxTouch` object to fire at. If `null`, uses the first available one.
-	 * @return `true` if a bullet was fired, or `false` if one wasn't available. A reference to the last fired bullet is stored in `currentBullet`.
+	 * @param   touch  The `FlxTouch` object to fire at. If `null`, uses the first available one.
+	 * @return  `true` if a bullet was fired, or `false` if one wasn't available.
+	 * A reference to the last fired bullet is stored in `currentBullet`.
 	 */
 	public function fireAtTouch(?touch:FlxTouch):Bool {
 		var touch = touch == null ? FlxG.touches.getFirst() : touch;
@@ -312,21 +350,25 @@ class FlxTypedWeapon<TBullet:FlxBullet> implements IFlxDestroyable {
 	#end
 
 	/**
-	 * Fires a bullet (if one is available) at the given x/y coordinates, using the speed set in `speedMode` and the rate set in `fireRate`.
+	 * Fires a bullet (if one is available) at the given x/y coordinates,
+	 * using the speed set in `speedMode` and the rate set in `fireRate`.
 	 *
-	 * @param x The x coordinate (in game world pixels) to fire at.
-	 * @param y The y coordinate (in game world pixels) to fire at.
-	 * @return `true` if a bullet was fired, or `false` if one wasn't available. A reference to the last fired bullet is stored in `currentBullet`.
+	 * @param   x  The x coordinate (in game world pixels) to fire at.
+	 * @param   y  The y coordinate (in game world pixels) to fire at.
+	 * @return  `true` if a bullet was fired, or `false` if one wasn't available.
+	 * A reference to the last fired bullet is stored in `currentBullet`.
 	 */
 	public inline function fireAtPosition(x:Int, y:Int):Bool {
 		return runFire(FIRE_AT_POSITION(x, y));
 	}
 
 	/**
-	 * Fires a bullet (if one is available) at the given target's position, using the speed set in `speedMode` and the rate set in `fireRate`.
+	 * Fires a bullet (if one is available) at the given target's position,
+	 * using the speed set in `speedMode` and the rate set in `fireRate`.
 	 *
-	 * @param target The `FlxSprite` to fire the bullet at.
-	 * @return `true` if a bullet was fired, or `false` if one wasn't available. A reference to the last fired bullet is stored in `currentBullet`.
+	 * @param   target  The `FlxSprite` to fire the bullet at.
+	 * @return  `true` if a bullet was fired, or `false` if one wasn't available.
+	 * A reference to the last fired bullet is stored in `currentBullet`.
 	 */
 	public inline function fireAtTarget(target:FlxSprite):Bool {
 		return runFire(FIRE_AT_TARGET(target));
@@ -335,8 +377,10 @@ class FlxTypedWeapon<TBullet:FlxBullet> implements IFlxDestroyable {
 	/**
 	 * Fires a bullet (if one is available) based on the given angle.
 	 *
-	 * @param angle The angle (in degrees) calculated in clockwise positive direction (down = 90 degrees positive, right = 0 degrees positive, up = 90 degrees negative)
-	 * @return `true` if a bullet was fired, or `false` if one wasn't available. A reference to the last fired bullet is stored in `currentBullet`.
+	 * @param   angle  The angle (in degrees) calculated in clockwise positive direction
+	 *                 (down = 90 degrees positive, right = 0 degrees positive, up = 90 degrees negative)
+	 * @return  `true` if a bullet was fired, or `false` if one wasn't available.
+	 * A reference to the last fired bullet is stored in `currentBullet`.
 	 */
 	public inline function fireFromAngle(angle:FlxBounds<Float>):Bool {
 		return runFire(FIRE_FROM_ANGLE(angle));
@@ -345,7 +389,8 @@ class FlxTypedWeapon<TBullet:FlxBullet> implements IFlxDestroyable {
 	/**
 	 * Fires a bullet (if one is available) based on the angle of the weapon's `parent`.
 	 *
-	 * @return `true` if a bullet was fired, or `false` if one wasn't available. A reference to the last fired bullet is stored in `currentBullet`.
+	 * @return  `true` if a bullet was fired, or `false` if one wasn't available.
+	 * A reference to the last fired bullet is stored in `currentBullet`.
 	 */
 	public inline function fireFromParentAngle(angle:FlxBounds<Float>):Bool {
 		return runFire(FIRE_FROM_PARENT_ANGLE(angle));
@@ -354,8 +399,8 @@ class FlxTypedWeapon<TBullet:FlxBullet> implements IFlxDestroyable {
 	/**
 	 * Sets a pre-fire callback function and sound. These are played immediately before the bullet is fired.
 	 *
-	 * @param callback The function to call before a bullet is fired.
-	 * @param sound An `FlxSound` to play before a bullet is fired.
+	 * @param   callback  The function to call before a bullet is fired.
+	 * @param   sound     An `FlxSound` to play before a bullet is fired.
 	 */
 	public function setPreFireCallback(?callback:Void->Void, ?sound:FlxSound):Void {
 		onPreFireCallback = callback;
@@ -365,8 +410,8 @@ class FlxTypedWeapon<TBullet:FlxBullet> implements IFlxDestroyable {
 	/**
 	 * Sets a post-fire callback function and sound. These are played immediately after the bullet is fired.
 	 *
-	 * @param callback The function to call after a bullet is fired.
-	 * @param sound An `FlxSound` to play after a bullet is fired.
+	 * @param   callback  The function to call after a bullet is fired.
+	 * @param   sound     An `FlxSound` to play after a bullet is fired.
 	 */
 	public function setPostFireCallback(?callback:Void->Void, ?sound:FlxSound):Void {
 		onPostFireCallback = callback;
@@ -376,11 +421,11 @@ class FlxTypedWeapon<TBullet:FlxBullet> implements IFlxDestroyable {
 	/**
 	 * Checks whether the bullets are overlapping the specified object or group.
 	 *
-	 * @param objectOrGroup The object or group to check against.
-	 * @param notifyCallBack A function that will get called if a bullet overlaps the object or group.
-	 * @param skipParent Whether to ignore collisions with the parent of this weapon.
+	 * @param  objectOrGroup   The object or group to check against.
+	 * @param  notifyCallBack  A function that will get called if a bullet overlaps the object or group.
+	 * @param  skipParent      Whether to ignore collisions with the parent of this weapon.
 	 */
-	public inline function bulletsOverlap(objectOrGroup:FlxBasic, ?notifyCallBack:FlxObject->FlxObject->Void, skipParent:Bool = true):Void {
+	public inline function bulletsOverlap(objectOrGroup:FlxBasic, ?notifyCallBack:FlxObject->FlxObject->Void, skipParent = true):Void {
 		if (group != null && group.length > 0) {
 			skipParentCollision = skipParent;
 			FlxG.overlap(objectOrGroup, group, notifyCallBack != null ? notifyCallBack : onBulletHit, shouldBulletHit);
@@ -440,44 +485,26 @@ class FlxTypedWeapon<TBullet:FlxBullet> implements IFlxDestroyable {
 		}
 	}
 
-	function set_fireFrom(v:FlxWeaponFireFrom):FlxWeaponFireFrom {
-		if (v != null) {
-			switch (v) {
-				case PARENT(parent, _, _, angleOffset):
-					this.parent = parent;
-					if (angleOffset != null)
-						this.angleOffset = angleOffset;
+	override public function destroy():Void {
+		super.destroy();
 
-				default:
-					parent = null;
-			}
-		}
-		return fireFrom = v;
-	}
-
-	public function destroy():Void {
 		name = null;
 		group = FlxDestroyUtil.destroy(group);
 		bounds = FlxDestroyUtil.put(bounds);
 		parent = null; // Don't destroy the parent
+		positionOffsetBounds = FlxDestroyUtil.put(positionOffsetBounds);
+		firePosition = FlxDestroyUtil.put(firePosition);
 		if (fireFrom != null) {
 			switch (fireFrom) {
 				case PARENT(parent, offset, useParentAngle, angleOffset):
 					parent = null;
-					if (offset != null) {
-						offset.min = FlxDestroyUtil.put(offset.min);
-						offset.max = FlxDestroyUtil.put(offset.max);
-						offset = null;
-					}
+					offset = FlxDestroyUtil.put(offset);
 					angleOffset = null;
 				case POSITION(position):
-					if (position != null) {
-						position.min = FlxDestroyUtil.put(position.min);
-						position.max = FlxDestroyUtil.put(position.max);
-						position = null;
-					}
+					position = FlxDestroyUtil.put(position);
 			}
-			fireFrom = null;
+			// fireFrom = null; // Can't do this because sending null to set_fireFrom() causes an NPE
+			@:bypassAccessor fireFrom = null;
 		}
 		if (speedMode != null) {
 			switch (speedMode) {
@@ -493,27 +520,60 @@ class FlxTypedWeapon<TBullet:FlxBullet> implements IFlxDestroyable {
 		currentBullet = FlxDestroyUtil.destroy(currentBullet);
 		onPreFireCallback = null;
 		onPostFireCallback = null;
-		onPreFireSound = null; // TODO Should these be destroyed?
+		onPreFireSound = null;
 		onPostFireSound = null;
 		bulletFactory = null;
+	}
 
-		fireTimer = FlxDestroyUtil.destroy(fireTimer);
+	function set_useParentDirection(v:Bool):Bool {
+		switch (fireFrom) {
+			case PARENT(parent, offset, useParentAngle, angleOffset):
+				@:bypassAccessor fireFrom = PARENT(parent, offset, v, angleOffset);
+			default:
+		}
+		return v;
+	}
+
+	function set_fireFrom(v:FlxWeaponFireFrom):FlxWeaponFireFrom {
+		switch (v) {
+			case PARENT(parent, offset, useParentAngle, angleOffset):
+				this.parent = parent;
+				this.positionOffsetBounds = offset;
+				if (angleOffset != null)
+					this.angleOffset = angleOffset;
+
+				this.firePosition = null;
+
+			case POSITION(position):
+				this.firePosition = position;
+
+				this.parent = null;
+				this.positionOffsetBounds = null;
+
+			default:
+				this.parent = null;
+				this.positionOffsetBounds = null;
+				this.firePosition = null;
+		}
+		return fireFrom = v;
 	}
 }
 
 enum FlxWeaponFireFrom {
 	/**
-	 * @param parent The parent sprite of the weapon.
-	 * @param offset A value to use to offset a bullet's position when it is fired. Can be used to, for example, line a bullet up with the "nose" of a space ship.
-	 * @param useParentAngle Whether to fire bullets in the direction of the `parent`'s angle.
-	 * @param angleOffset A value to use to offset a bullet's angle from the `parent`'s angle when it is fired.
+	 * @param   parent          The parent sprite of the weapon.
+	 * @param   offset          A value used to offset a bullet's position when it is fired
+	 *                          (e.g. to line a bullet up with the "nose" of a space ship).
+	 * @param   useParentAngle  Whether to fire bullets in the direction of the `parent`'s angle.
+	 * @param   angleOffset     A value used to offset a bullet's angle from the `parent`'s angle
+	 *                          when it is fired.
 	 */
-	PARENT(parent:FlxSprite, offset:FlxBounds<FlxPoint>, ?useParentAngle:Bool, ?angleOffset:Float);
+	PARENT(parent:FlxSprite, offset:FlxRect, ?useParentAngle:Bool, ?angleOffset:Float);
 
 	/**
-	 * @param position A fixed position from which to fire the weapon, like in the game Missile Command.
+	 * @param   position  A fixed position from which to fire the weapon, like in the game Missile Command.
 	 */
-	POSITION(position:FlxBounds<FlxPoint>);
+	POSITION(position:FlxRect);
 }
 
 enum FlxWeaponFireMode {

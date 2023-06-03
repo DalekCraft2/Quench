@@ -15,6 +15,7 @@
     <app min-swf-version="11.8" />
     <!-- I like to use the latest versions of things. -->
     <!-- <app swf-version="43" /> -->
+    <!-- Unfortunately, AIR can't handle SWF version 43, so I have to stick with 11.8. -->
     <app swf-version="11.8" />
 
     <meta title="Quench" package="me.dalekcraft.quench" version="0.1" company="DalekCraft" />

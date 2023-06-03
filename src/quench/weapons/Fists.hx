@@ -2,6 +2,7 @@ package quench.weapons;
 
 import flixel.FlxSprite;
 import flixel.math.FlxPoint;
+import flixel.math.FlxRect;
 import flixel.util.helpers.FlxBounds;
 
 // TODO Improve melee weapons; make the "bullets" move with the player, rather than acting like actual bullets
@@ -10,11 +11,13 @@ class Fists extends QuenchWeapon {
 		var bulletSize:Int = 25;
 		super("fists", parent, SPEED(new FlxBounds<Float>(300, 300)), bulletSize);
 
-		fireFrom = PARENT(parent,
-			new FlxBounds(FlxPoint.get(parent.width / 2 - bulletSize, parent.height / 2 - bulletSize), FlxPoint.get(parent.width / 2, parent.height / 2)));
+		var fireFromRect:FlxRect = FlxRect.get()
+			.fromTwoPoints(FlxPoint.weak(parent.width / 2 - bulletSize, parent.height / 2 - bulletSize), FlxPoint.weak(parent.width / 2, parent.height / 2));
+
+		fireFrom = PARENT(parent, fireFromRect);
 
 		bulletLifeSpan = new FlxBounds<Float>(0.1, 0.1);
-		fireRate = 150;
+		fireRate = 0.15;
 
 		recoil = false;
 		bulletColor = parent.color;

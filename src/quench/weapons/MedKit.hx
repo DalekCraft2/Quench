@@ -2,8 +2,8 @@ package quench.weapons;
 
 import flixel.FlxG;
 import flixel.FlxSprite;
-import flixel.addons.weapon.FlxWeapon.FlxWeaponFireMode;
 import flixel.util.helpers.FlxBounds;
+import quench.weapons.FlxWeapon.FlxWeaponFireMode;
 
 class MedKit extends QuenchWeapon {
 	public function new(parent:FlxSprite) {

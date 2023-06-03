@@ -1,4 +1,4 @@
-package flixel.addons.weapon;
+package quench.weapons;
 
 import flixel.FlxSprite;
 import flixel.math.FlxMath;
@@ -12,13 +12,16 @@ import flixel.util.FlxDestroyUtil;
  * @author Touch added by Impaler / Beeblerox
  */
 class FlxBullet extends FlxSprite {
-	// Acceleration or Velocity?
+	/**
+	 * Whether to use acceleration instead of velocity. Default is `false`.
+	 */
 	public var accelerates:Bool = false;
+
 	public var xAcceleration:Int;
 	public var yAcceleration:Int;
 	public var lifespan:Float;
 
-	@:allow(flixel.addons.weapon)
+	@:allow(quench.weapons)
 	var bounds:FlxRect;
 
 	public function new() {
