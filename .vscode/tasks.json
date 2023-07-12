@@ -2,10 +2,20 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "Lime Build",
+            "type": "lime",
+            "command": "build",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Lime Test",
             "type": "lime",
             "command": "test",
             "group": {
-                "kind": "build",
+                "kind": "test",
                 "isDefault": true
             }
         }

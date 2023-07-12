@@ -4,7 +4,8 @@
         {
             "name": "Build + Debug",
             "type": "lime",
-            "request": "launch"
+            "request": "launch",
+            "preLaunchTask": "${defaultBuildTask}"
         },
         {
             "name": "Debug",
