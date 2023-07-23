@@ -7,18 +7,16 @@ import flixel.tile.FlxTilemap;
 import flixel.tweens.FlxTween;
 import flixel.util.FlxColor;
 import flixel.util.FlxDestroyUtil;
-import flixel.util.FlxDirectionFlags;
 import flixel.util.FlxTimer;
 
 /**
  * My favorite AI so far, actually.
  */
-// FIXME Ram's color tween sometimes gets cancelled and set to the darker purple before changing back to the magenta before it starts ramming
-// It tends to only happen when multiple enemies are present in the world
 class Ram extends Enemy {
 	private var phase(default, set):RamPhase;
 
 	private var timer:FlxTimer;
+	private var colorTween:FlxTween;
 	private var dizzy:Bool = false;
 
 	public function new(?x:Float = 0, ?y:Float = 0) {
@@ -61,7 +59,15 @@ class Ram extends Enemy {
 	override public function destroy():Void {
 		super.destroy();
 
-		timer = FlxDestroyUtil.destroy(timer);
+		if (timer != null) {
+			timer.cancel();
+			timer = FlxDestroyUtil.destroy(timer);
+		}
+
+		if (colorTween != null) {
+			colorTween.cancel();
+			colorTween = FlxDestroyUtil.destroy(colorTween);
+		}
 	}
 
 	override private function updateDirectionalAcceleration():Void {
@@ -120,24 +126,36 @@ class Ram extends Enemy {
 
 	private function set_phase(value:RamPhase):RamPhase {
 		phase = value;
+
+		function doColorTween(duration:Float, toColor:FlxColor):Void {
+			if (colorTween != null) {
+				colorTween.cancel();
+			}
+			colorTween = FlxTween.color(this, duration, this.color, toColor, {
+				onComplete: (tween:FlxTween) -> {
+					colorTween = null;
+				}
+			});
+		}
+
 		switch (value) {
 			case IDLE:
 				dizzy = false;
 				usePathfinding = true;
 				entityMovementSpeed = 1;
 				timer.cancel();
-				FlxTween.color(this, 1, this.color, FlxColor.PURPLE);
+				doColorTween(1, FlxColor.PURPLE);
 			case BACKING_UP:
 				usePathfinding = false;
 				entityMovementSpeed = -1.5;
 				timer.time = 1;
-				FlxTween.color(this, 1, this.color, FlxColor.MAGENTA);
+				doColorTween(1, FlxColor.MAGENTA);
 			case RAMMING:
 				usePathfinding = false;
 				entityMovementSpeed = 7;
 				elasticity = 0;
 				timer.time = 3;
-				FlxTween.color(this, 1, this.color, FlxColor.MAGENTA);
+				doColorTween(1, FlxColor.MAGENTA);
 				directionalAcceleration.normalize();
 				directionalAcceleration.negate(); // Undo the effect caused by the -1.5 movement speed
 				directionalAcceleration.scale(entityMovementSpeed * PhysicsObject.MOTION_FACTOR);
@@ -147,7 +165,7 @@ class Ram extends Enemy {
 				entityMovementSpeed = 1;
 				elasticity = 0.3;
 				timer.time = 4;
-				FlxTween.color(this, 1, this.color, FlxColor.PURPLE);
+				doColorTween(1, FlxColor.PURPLE);
 		}
 
 		return value;
@@ -156,7 +174,7 @@ class Ram extends Enemy {
 
 enum RamPhase {
 	IDLE;
-	BACKING_UP; // I am not sure of whether there is a proper word for this...
+	BACKING_UP; // I am unsure of whether there is a proper word for this...
 	RAMMING;
 	COOLDOWN;
 }
