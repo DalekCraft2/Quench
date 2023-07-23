@@ -59,16 +59,38 @@ class Player extends Entity {
 
 		weapons.push(new Fists(this));
 		weapons.push(new Revolver(this));
-		weapons.push(new MachineGun(this));
+		weapons.push(new SubMachineGun(this));
 		weapons.push(new RocketPropelledGrenade(this));
 		weapons.push(new TankGun(this));
 		weapons.push(new MedKit(this));
 		#if debug
 		weapons.push(new DebugGun(this));
 		#end
+
+		for (i => weapon in weapons) {
+			if (i != weaponIndex) {
+				if (weapon.weaponSprite != null) {
+					weapon.weaponSprite.visible = false;
+				}
+			}
+		}
 	}
 
 	override public function update(elapsed:Float):Void {
+		if (alive) {
+			// Check for a weapon change before super.update() so the proper weapon is aimed during lookAtPoint();
+			// otherwise, for a single frame, the new weapon is aimed in the direction in which it was aimed before being switched out.
+			if (changeWeapon.triggered) {
+				if (weapons[weaponIndex].weaponSprite != null) {
+					weapons[weaponIndex].weaponSprite.visible = false;
+				}
+				weaponIndex = FlxMath.wrap(weaponIndex - FlxG.mouse.wheel, 0, weapons.length - 1);
+				if (weapons[weaponIndex].weaponSprite != null) {
+					weapons[weaponIndex].weaponSprite.visible = true;
+				}
+			}
+		}
+
 		super.update(elapsed);
 
 		if (alive) {
@@ -87,10 +109,6 @@ class Player extends Entity {
 			var mousePoint:FlxPoint = FlxG.mouse.getPosition();
 			lookAtPoint(mousePoint);
 			mousePoint.put();
-
-			if (changeWeapon.triggered) {
-				weaponIndex = FlxMath.wrap(weaponIndex - FlxG.mouse.wheel, 0, weapons.length - 1);
-			}
 
 			if (fire.triggered) {
 				weapons[weaponIndex].fireAtMouse();
@@ -112,6 +130,43 @@ class Player extends Entity {
 		noclip = FlxDestroyUtil.destroy(noclip);
 
 		weapons = FlxDestroyUtil.destroyArray(weapons);
+	}
+
+	override public function kill():Void {
+		super.kill();
+
+		for (i => weapon in weapons) {
+			if (weapon.weaponSprite != null) {
+				weapon.weaponSprite.visible = false;
+			}
+		}
+	}
+
+	override public function revive():Void {
+		super.revive();
+
+		for (i => weapon in weapons) {
+			if (weapon.weaponSprite != null) {
+				weapon.weaponSprite.visible = i == weaponIndex;
+			}
+		}
+	}
+
+	override public function lookAtPoint(targetPoint:FlxPoint):Void {
+		super.lookAtPoint(targetPoint);
+
+		if (alive && weapons[weaponIndex].weaponSprite != null) {
+			var midpoint:FlxPoint = getMidpoint();
+
+			if (midpoint.distanceTo(targetPoint) != 0) {
+				var angle:Float = midpoint.degreesTo(targetPoint);
+
+				weapons[weaponIndex].weaponSprite.angle = angle;
+				weapons[weaponIndex].weaponSprite.flipY = angle > 90 || angle < -90;
+			}
+
+			midpoint.put();
+		}
 	}
 
 	override private function updateDestinationPoint():Void {
@@ -144,15 +199,9 @@ class Player extends Entity {
 		updateHitbox();
 		mass = scale.x * scale.y;
 		entityMovementSpeed = 2 * bigFactor;
-		// FIXME Weapon bullet offset does not update when making the Player bigger, because the player's width and height are only retrieved in the weapon's constructor
-		// for (weapon in weapons) {
-		// 	switch (weapon.fireFrom) {
-		// 		case PARENT(parent, offset, useParentAngle, angleOffset):
-		// 			getMidpoint(offset.min);
-		// 		// getMidpoint(offset.max);
-		// 		case POSITION(position):
-		// 	}
-		// }
+		for (weapon in weapons) {
+			weapon.updateOffsets();
+		}
 		return value;
 	}
 }

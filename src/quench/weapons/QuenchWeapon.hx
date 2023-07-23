@@ -8,11 +8,14 @@ import flixel.math.FlxRect;
 import flixel.sound.FlxSound;
 import flixel.tile.FlxTilemap;
 import flixel.util.FlxColor;
+import flixel.util.FlxDestroyUtil;
+import haxe.io.Path;
 import quench.weapons.FlxWeapon;
 
 // TODO Add Davy Crockett.
 // TODO Make sprites for the weapons and have them show up aiming at where the AI/Player is aiming
 // TODO Use FlxEmitter to make impact particles for bullets what explode
+// TODO Consider using weaponSprite as the parent instead of the entity what is using the weapon.
 class QuenchWeapon extends FlxTypedWeapon<FlxBullet> {
 	public var recoil:Bool = true;
 	public var fireShakeIntensity:Float;
@@ -20,6 +23,7 @@ class QuenchWeapon extends FlxTypedWeapon<FlxBullet> {
 	public var hitShakeIntensity:Float;
 	public var hitShakeDuration:Float;
 	public var bulletColor:FlxColor = FlxColor.BLACK;
+	public var bulletSize:Int;
 	public var bulletMass:Float;
 	public var bulletDamage:Float;
 	public var useAmmo:Bool = true;
@@ -31,13 +35,15 @@ class QuenchWeapon extends FlxTypedWeapon<FlxBullet> {
 	public var weaponSprite:FlxSprite;
 
 	public function new(name:String, parent:FlxSprite, speedMode:FlxWeaponSpeedMode, bulletSize:Int) {
+		this.bulletSize = bulletSize;
+
 		super(name, (weapon:FlxWeapon) -> {
 			var bullet:FlxBullet = new FlxBullet();
-			bullet.makeGraphic(bulletSize, bulletSize, bulletColor);
+			bullet.makeGraphic(this.bulletSize, this.bulletSize, bulletColor);
 			bullet.mass = bulletMass;
 			return bullet;
 		},
-			PARENT(parent, FlxRect.get(parent.width / 2 - bulletSize / 2, parent.height / 2 - bulletSize / 2)), speedMode);
+			PARENT(parent, FlxRect.get(parent.width / 2 - this.bulletSize / 2, parent.height / 2 - this.bulletSize / 2)), speedMode);
 
 		setPostFireCallback(() -> {
 			doRecoil();
@@ -58,10 +64,21 @@ class QuenchWeapon extends FlxTypedWeapon<FlxBullet> {
 			}
 		} // , FlxG.sound.load("assets/audios/sounds/shoot.ogg")
 		);
+
+		weaponSprite = new FlxSprite().loadGraphic(Path.join(["assets/images/sprites/weapons", Path.withExtension(this.name, "png")]));
+		updateOffsets();
+		weaponSprite.solid = false;
+		add(weaponSprite);
 	}
 
 	override public function update(elapsed:Float):Void {
 		super.update(elapsed);
+
+		if (weaponSprite != null) {
+			var parentMidpoint:FlxPoint = parent.getMidpoint();
+			weaponSprite.setPosition(parentMidpoint.x, parentMidpoint.y);
+			parentMidpoint.put();
+		}
 
 		if (nextFire <= 0 && reloading) {
 			reloading = false;
@@ -72,6 +89,7 @@ class QuenchWeapon extends FlxTypedWeapon<FlxBullet> {
 		super.destroy();
 
 		hitSound = null;
+		weaponSprite = FlxDestroyUtil.destroy(weaponSprite);
 	}
 
 	override private function shouldBulletHit(object:FlxObject, bullet:FlxObject):Bool {
@@ -106,6 +124,16 @@ class QuenchWeapon extends FlxTypedWeapon<FlxBullet> {
 			nextFire = reloadTime;
 			reloading = true;
 		}
+	}
+
+	public function updateOffsets():Void {
+		switch (fireFrom) {
+			case PARENT(parent, offset, useParentAngle, angleOffset):
+				offset.set(parent.width / 2 - bulletSize / 2, parent.height / 2 - bulletSize / 2);
+			case POSITION(position):
+		}
+		weaponSprite.offset.set(weaponSprite.width / 2 - parent.width, weaponSprite.height / 2);
+		weaponSprite.origin.copyFrom(weaponSprite.offset);
 	}
 
 	private function doRecoil():Void {

@@ -1,5 +1,6 @@
 package quench.objects;
 
+import flixel.math.FlxPoint;
 import flixel.util.FlxColor;
 import flixel.util.FlxDestroyUtil;
 import quench.weapons.QuenchWeapon;
@@ -36,5 +37,38 @@ class Gunner extends Enemy {
 		super.destroy();
 
 		weapon = FlxDestroyUtil.destroy(weapon);
+	}
+
+	override public function kill():Void {
+		super.kill();
+
+		if (weapon.weaponSprite != null) {
+			weapon.weaponSprite.visible = false;
+		}
+	}
+
+	override public function revive():Void {
+		super.revive();
+
+		if (weapon.weaponSprite != null) {
+			weapon.weaponSprite.visible = true;
+		}
+	}
+
+	override public function lookAtPoint(targetPoint:FlxPoint):Void {
+		super.lookAtPoint(targetPoint);
+
+		if (alive && weapon.weaponSprite != null) {
+			var midpoint:FlxPoint = getMidpoint();
+
+			if (midpoint.distanceTo(targetPoint) != 0) {
+				var angle:Float = midpoint.degreesTo(targetPoint);
+
+				weapon.weaponSprite.angle = angle;
+				weapon.weaponSprite.flipY = angle > 90 || angle < -90;
+			}
+
+			midpoint.put();
+		}
 	}
 }

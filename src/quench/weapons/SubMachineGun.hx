@@ -3,9 +3,9 @@ package quench.weapons;
 import flixel.FlxSprite;
 import flixel.util.helpers.FlxBounds;
 
-class MachineGun extends QuenchWeapon {
+class SubMachineGun extends QuenchWeapon {
 	public function new(parent:FlxSprite) {
-		super("machine_gun", parent, SPEED(new FlxBounds<Float>(500, 500)), 12);
+		super("submachine_gun", parent, SPEED(new FlxBounds<Float>(500, 500)), 12);
 
 		bulletLifeSpan = new FlxBounds<Float>(2, 2);
 		fireRate = 0.1;
