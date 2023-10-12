@@ -72,7 +72,6 @@ class PlayState extends FlxState {
 		physicsObjects = new FlxTypedGroup();
 		add(physicsObjects);
 
-		@:privateAccess FlxBaseTilemap.diagonalPathfinder = new BigMoverPathfinder(1, 1, WIDE);
 		tilemap = new FlxTilemap();
 		// I took the tile graphics from the FlxTilemap demo.
 		// https://haxeflixel.com/demos/TileMap/
@@ -268,6 +267,37 @@ class PlayState extends FlxState {
 		collide(physicsObjects, physicsObjects, collideNotify);
 		for (weapon in weapons) {
 			weapon.bulletsOverlap(physicsObjects);
+		}
+
+		var i:Int = 0;
+		while (i < removables.members.length) {
+			var physicsObject:FlxBasic = removables.members[i];
+			if (physicsObject == null || !physicsObject.exists) {
+				if (physicsObject is PhysicsObject && !cast(physicsObject, PhysicsObject).deathTween.finished) {
+					// BUG A new Flixel bug causes the tween to continue even after onComplete is called, which causes an NPE after the object is destroyed.
+					// To prevent this, we have to check whether the tween is finished.
+					i++;
+					continue;
+				}
+				if (physicsObject != null) {
+					physicsObject.destroy();
+				}
+				removables.remove(physicsObject, true);
+			} else {
+				i++;
+			}
+		}
+		i = 0;
+		while (i < weapons.length) {
+			var weapon:QuenchWeapon = weapons[i];
+			if (weapon == null || weapon.parent == null || (!weapon.parent.exists && !(weapon.parent is Player))) {
+				if (weapon != null) {
+					weapon.destroy();
+				}
+				weapons.remove(weapon);
+			} else {
+				i++;
+			}
 		}
 
 		// Do this check after the collision, because, otherwise, the game acts as if the Player just moved extremely quickly from one position to another rather than teleporting

@@ -10,6 +10,8 @@ import flixel.util.FlxDirectionFlags;
 import haxe.io.Path;
 
 class Entity extends PhysicsObject {
+	private static final pathfinder:BigMoverPathfinder = new BigMoverPathfinder(1, 1);
+
 	public var tilemap:FlxTilemap;
 
 	/**
@@ -149,11 +151,9 @@ class Entity extends PhysicsObject {
 				directionalAcceleration.length = entityMovementSpeed * PhysicsObject.MOTION_FACTOR;
 
 				if (usePathfinding && path != null && tilemap != null) {
-					// TODO Make this code not awful
-					@:privateAccess var pathfinder:BigMoverPathfinder = cast(FlxBaseTilemap.diagonalPathfinder, BigMoverPathfinder);
 					pathfinder.widthInTiles = Math.ceil(tilemap.tileWidth / width);
 					pathfinder.heightInTiles = Math.ceil(tilemap.tileHeight / height);
-					var pathPoints:Array<FlxPoint> = tilemap.findPath(midpoint, destinationPoint, RAY_BOX(width, height), NONE);
+					var pathPoints:Array<FlxPoint> = pathfinder.findPath(cast tilemap, midpoint, destinationPoint, RAY_BOX(width, height));
 					path.start(pathPoints, entityMovementSpeed * PhysicsObject.MOTION_FACTOR);
 				} else {
 					if (useAcceleration) {

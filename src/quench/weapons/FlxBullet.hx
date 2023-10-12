@@ -3,7 +3,6 @@ package quench.weapons;
 import flixel.FlxSprite;
 import flixel.math.FlxMath;
 import flixel.math.FlxRect;
-import flixel.util.FlxDestroyUtil;
 
 /**
  * @link http://www.photonstorm.com
@@ -47,6 +46,7 @@ class FlxBullet extends FlxSprite {
 	override public function destroy():Void {
 		super.destroy();
 
-		bounds = FlxDestroyUtil.put(bounds);
+		// bounds = FlxDestroyUtil.put(bounds);
+		bounds = null; // The FlxRect instance is still used by the parent FlxWeapon
 	}
 }

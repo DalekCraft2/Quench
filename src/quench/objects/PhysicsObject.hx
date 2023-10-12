@@ -10,7 +10,7 @@ class PhysicsObject extends FlxSprite {
 
 	public var maxHealth:Float = 1;
 
-	private var deathTween:FlxTween;
+	public var deathTween:FlxTween;
 
 	private var useMaxVelocity:Bool = false;
 
