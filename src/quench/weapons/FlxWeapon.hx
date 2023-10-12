@@ -27,7 +27,6 @@ import flixel.input.touch.FlxTouch;
  * @author Richard Davey / Photon Storm
  * @author Touch added by Impaler / Beeblerox
  *
- * TODO: Angled bullets
  * TODO: Multishot
  * TODO: Baked Rotation support for angled bullets
  * TODO: Bullet death styles (particle effects)
@@ -73,7 +72,6 @@ class FlxTypedWeapon<TBullet:FlxBullet> extends FlxGroup {
 
 	/**
 	 * When a bullet goes outside of these bounds, it will be automatically killed, freeing it up for firing again.
-	 * TODO - Needs testing with a scrolling map (when not using single screen display)
 	 */
 	public var bounds:FlxRect;
 

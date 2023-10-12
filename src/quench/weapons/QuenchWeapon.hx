@@ -13,7 +13,6 @@ import haxe.io.Path;
 import quench.weapons.FlxWeapon;
 
 // TODO Add Davy Crockett.
-// TODO Make sprites for the weapons and have them show up aiming at where the AI/Player is aiming
 // TODO Use FlxEmitter to make impact particles for bullets what explode
 // TODO Consider using weaponSprite as the parent instead of the entity what is using the weapon.
 class QuenchWeapon extends FlxTypedWeapon<FlxBullet> {
@@ -108,7 +107,6 @@ class QuenchWeapon extends FlxTypedWeapon<FlxBullet> {
 		}
 
 		if (!(object is FlxTilemap)) { // Don't damage the FlxTilemap
-			// TODO Do something with the dead unused entities in PlayState so they don't take up memory and space in the groups
 			object.hurt(bulletDamage);
 		}
 

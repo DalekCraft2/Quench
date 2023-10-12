@@ -13,14 +13,13 @@ import flixel.util.FlxDestroyUtil;
  */
 class FlxBullet extends FlxSprite {
 	/**
-	 * Whether to use acceleration instead of velocity. Default is `false`.
+	 * For how long this bullet will exist before being killed, in seconds.
 	 */
-	public var accelerates:Bool = false;
-
-	public var xAcceleration:Int;
-	public var yAcceleration:Int;
 	public var lifespan:Float;
 
+	/**
+	 * The `bounds` field from the parent `FlxWeapon`.
+	 */
 	@:allow(quench.weapons)
 	var bounds:FlxRect;
 

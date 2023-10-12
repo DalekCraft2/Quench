@@ -31,7 +31,7 @@ class PlayState extends FlxState {
 	private var removables:FlxTypedGroup<FlxBasic>;
 
 	/**
-	 * A slight edit of FlxG.collide(). Does special collision checks for Worms and Rams.
+	 * A slight edit of `FlxG.collide()`. Does special collision checks for Worms and Rams.
 	 */
 	private static function collide(?objectOrGroup1:FlxBasic, ?objectOrGroup2:FlxBasic, ?notifyCallback:(obj1:FlxObject, obj2:FlxObject) -> Void):Bool {
 		return FlxG.overlap(objectOrGroup1, objectOrGroup2, notifyCallback, (obj1:FlxObject, obj2:FlxObject) -> {
