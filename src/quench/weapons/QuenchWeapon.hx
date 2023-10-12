@@ -3,6 +3,7 @@ package quench.weapons;
 import flixel.FlxG;
 import flixel.FlxObject;
 import flixel.FlxSprite;
+import flixel.effects.particles.FlxParticle;
 import flixel.math.FlxPoint;
 import flixel.math.FlxRect;
 import flixel.sound.FlxSound;
@@ -13,7 +14,6 @@ import haxe.io.Path;
 import quench.weapons.FlxWeapon;
 
 // TODO Add Davy Crockett.
-// TODO Use FlxEmitter to make impact particles for bullets what explode
 // TODO Consider using weaponSprite as the parent instead of the entity what is using the weapon.
 class QuenchWeapon extends FlxTypedWeapon<FlxBullet> {
 	public var recoil:Bool = true;
@@ -92,7 +92,7 @@ class QuenchWeapon extends FlxTypedWeapon<FlxBullet> {
 	}
 
 	override private function shouldBulletHit(object:FlxObject, bullet:FlxObject):Bool {
-		if (object is FlxBullet) {
+		if (object is FlxBullet || object is FlxParticle) {
 			return false;
 		} else {
 			return super.shouldBulletHit(object, bullet);

@@ -209,8 +209,9 @@ class FlxTypedWeapon<TBullet:FlxBullet> extends FlxGroup {
 			return false;
 		}
 
-		// Clear any velocity that may have been previously set from the pool
-		currentBullet.velocity.zero(); // TODO is this really necessary?
+		// Clear any velocity and acceleration that may have been previously set from the pool
+		currentBullet.velocity.zero();
+		currentBullet.acceleration.zero();
 
 		switch (fireFrom) {
 			case PARENT(parent, offset, useParentAngle, angleOffset):
@@ -218,7 +219,7 @@ class FlxTypedWeapon<TBullet:FlxBullet> extends FlxGroup {
 				var actualOffset = FlxPoint.get(FlxG.random.float(offset.left, offset.right), FlxG.random.float(offset.top, offset.bottom));
 				if (useParentAngle) {
 					// rotate actual offset around parent origin using the parent angle
-					rotatePoints(actualOffset, parent.origin, parent.angle, actualOffset);
+					rotatePoints(actualOffset, parent.origin, parent.angle + angleOffset, actualOffset);
 
 					// reposition offset to have its origin at the new returned point
 					actualOffset.subtract(currentBullet.width / 2, currentBullet.height / 2);
@@ -423,7 +424,7 @@ class FlxTypedWeapon<TBullet:FlxBullet> extends FlxGroup {
 	 * @param  notifyCallBack  A function that will get called if a bullet overlaps the object or group.
 	 * @param  skipParent      Whether to ignore collisions with the parent of this weapon.
 	 */
-	public inline function bulletsOverlap(objectOrGroup:FlxBasic, ?notifyCallBack:FlxObject->FlxObject->Void, skipParent = true):Void {
+	public function bulletsOverlap(objectOrGroup:FlxBasic, ?notifyCallBack:FlxObject->FlxObject->Void, skipParent = true):Void {
 		if (group != null && group.length > 0) {
 			skipParentCollision = skipParent;
 			FlxG.overlap(objectOrGroup, group, notifyCallBack != null ? notifyCallBack : onBulletHit, shouldBulletHit);
@@ -435,7 +436,7 @@ class FlxTypedWeapon<TBullet:FlxBullet> extends FlxGroup {
 			return false;
 		}
 
-		if ((object is FlxTilemap)) {
+		if (object is FlxTilemap) {
 			return cast(object, FlxTilemap).overlapsWithCallback(bullet);
 		} else {
 			return true;
@@ -468,9 +469,8 @@ class FlxTypedWeapon<TBullet:FlxBullet> extends FlxGroup {
 		switch (speedMode) {
 			case SPEED(speed):
 				// TODO need to create a function: FlxVelocity.moveFromAngle(radians, speed);
-				var velocity = FlxVelocity.velocityFromAngle(FlxAngle.asDegrees(radians), FlxG.random.float(speed.min, speed.max));
-				bullet.velocity.x = velocity.x;
-				bullet.velocity.y = velocity.y;
+				var velocity:FlxPoint = FlxVelocity.velocityFromAngle(degrees, FlxG.random.float(speed.min, speed.max));
+				bullet.velocity.copyFrom(velocity);
 				velocity.put();
 
 			case ACCELERATION(acceleration, maxSpeed):
@@ -479,7 +479,7 @@ class FlxTypedWeapon<TBullet:FlxBullet> extends FlxGroup {
 		}
 
 		if (rotateBulletTowardsTarget) {
-			bullet.angle = angleOffset + FlxAngle.asDegrees(radians);
+			bullet.angle = angleOffset + degrees;
 		}
 	}
 
